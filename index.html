@@ -11,11 +11,73 @@
             src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
             font-weight: 400;
         }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700;900&display=swap');
+
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
             background-color: #f8f9fa;
             font-family: 'Pretendard', sans-serif;
             margin: 0; padding: 0; overflow-x: hidden;
+            overscroll-behavior: none;
+        }
+        body.main-active {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+        /* ── 타이틀 텍스트 ── */
+        .main-title-wrap {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 12vh;
+            text-align: center;
+        }
+        .title-badge {
+            display: inline-block;
+            background: #e74c3c;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            padding: 5px 16px;
+            border-radius: 30px;
+            margin-bottom: 14px;
+        }
+        .title-main {
+            font-family: 'Noto Serif KR', serif;
+            font-size: 2.4rem;
+            font-weight: 900;
+            color: white;
+            line-height: 1.2;
+            letter-spacing: -1px;
+            text-shadow: 0 3px 16px rgba(0,0,0,0.8), 0 0 40px rgba(0,0,0,0.4);
+            margin-bottom: 8px;
+        }
+        .title-sub-line {
+            font-family: 'Noto Serif KR', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.93);
+            letter-spacing: 2px;
+            text-shadow: 0 2px 12px rgba(0,0,0,0.7);
+            margin-bottom: 10px;
+        }
+        .title-desc {
+            color: rgba(255,255,255,0.65);
+            font-size: 0.78rem;
+            letter-spacing: 1.5px;
+            margin-top: 2px;
+        }
+        .title-divider {
+            width: 36px; height: 2px;
+            background: #e74c3c;
+            border-radius: 2px;
+            margin: 12px auto 0;
         }
 
         /* ── 모든 화면 기본 숨김 ── */
@@ -135,6 +197,7 @@
         }
         .dot-ready { background: #2ecc71; box-shadow: 0 0 6px #2ecc71; animation: blink 1.5s infinite; }
         .dot-busy  { background: #e74c3c; }
+        .dot-off   { background: #aaa; }
         @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
 
         /* ── 예약 현황 카드 ── */
@@ -336,6 +399,15 @@
             background:rgba(0,0,0,0.4); z-index:1;
         "></div>
 
+        <!-- 가운데 상단 제목 -->
+        <div class="main-title-wrap">
+            <div class="title-badge">24 HOURS · 365 DAYS</div>
+            <div class="title-main">24시간</div>
+            <div class="title-sub-line">바퀴벌레 긴급출동</div>
+            <div class="title-desc">전지역 즉시 출동 · 전문 방역 서비스</div>
+            <div class="title-divider"></div>
+        </div>
+
         <!-- 우측 상단 관리자 아이콘 -->
         <div onclick="goTo('admin-gate')" style="
             position:absolute; top:16px; right:16px; z-index:10;
@@ -450,8 +522,20 @@
             <tr><td>30평 이하</td><td class="price-bold">110,000원</td><td class="price-red">160,000원</td></tr>
             <tr><td>40평 이하</td><td class="price-bold">130,000원</td><td class="price-red">180,000원</td></tr>
             <tr><td>50평 이하</td><td class="price-bold">150,000원</td><td class="price-red">200,000원</td></tr>
+            <tr style="background:#fff5f5;">
+                <td style="text-align:left;padding-left:10px;">
+                    🪳 <b>독일바퀴</b><br>
+                    <span style="font-size:0.72rem;color:#888;">(내부 서식 바퀴)</span>
+                </td>
+                <td colspan="2" style="color:#e03131;font-weight:bold;font-size:0.88rem;">
+                    비용 별도 문의
+                </td>
+            </tr>
         </tbody>
     </table>
+    <div style="background:#fff5f5;border:1px solid #ffa8a8;border-radius:10px;padding:11px 14px;margin-bottom:16px;font-size:0.82rem;color:#555;">
+        ⚠️ <b style="color:#e03131;">독일바퀴(내부 서식)</b>는 일반 바퀴벌레보다 박멸 난이도가 높아 현장 상태에 따라 비용이 다르게 책정됩니다. 예약 전 문의 부탁드립니다.
+    </div>
 
     <div class="btn-back-group">
         <button class="btn btn-light w-100 btn-back" onclick="goTo('main')">뒤로가기</button>
@@ -503,7 +587,7 @@
         </div>
         <h6 class="fw-bold mb-2" style="font-size:1rem;">🏢 검증된 전문 업체만 엄선합니다</h6>
         <p class="small lh-lg opacity-85 mb-3">
-            저희 플랫폼의 대표는 방역 업계에서 수십 년의 현장 경력을 보유한 전문가입니다.
+            저희 플랫폼의 대표는 방역 업계에서 오랜 현장 경력을 보유한 전문가입니다.
             그 경험을 바탕으로 검증된 업체만을 엄격히 선별하여 서비스를 제공하고 있습니다.
         </p>
         <p class="small lh-lg opacity-75 mb-0">
@@ -581,7 +665,7 @@
         <p>
             • 바퀴벌레는 어디든 들어갈 수 있기 때문에 시야에 없는 경우 못 잡을 수도 있고
             잡더라도 추가 개체가 추후에 발견될 수도 있습니다.<br><br>
-            • <b>작업을 받는다고 한 마리도 안 보인다는 의미는 아니며, 유입 경로 차단, 전용약제작업 등으로
+            • <b>작업을 받는다고 한 마리도 안 보인다는 의미는 아니며, 유입 경로 차단, 전용 약제 작업 등으로
             최대한 덜 보이고 내부 서식을 못 하게 막는 작업이라고 이해하셔야 합니다.</b><br><br>
             • 보통 1회 작업으로 개선이 되는 경우도 있지만 생각보다 개체가 너무 많거나
             건물 문제가 심각한 경우 추가 작업이 필요할 수도 있습니다.
@@ -769,6 +853,13 @@ window.goTo = function(key) {
     el.classList.add('active');
     window.scrollTo(0, 0);
 
+    // 메인화면 스크롤 고정
+    if (key === 'main') {
+        document.body.classList.add('main-active');
+    } else {
+        document.body.classList.remove('main-active');
+    }
+
     // 서비스소개 → 작업자 실시간 로드
     if (key === 'about') loadPublicWorkers();
     // 관리자 패널 → 리스너 시작
@@ -808,7 +899,11 @@ window.submitBooking = async function() {
         showToast('✅ 예약이 접수되었습니다!');
         ['bk-name','bk-phone','bk-address','bk-memo'].forEach(id => document.getElementById(id).value = '');
         document.getElementById('bk-facility').checked = false;
-        // 내 예약 화면으로 이동해 바로 조회
+        // 알람 노드 저장 (작업자 알람용)
+        await push(ref(db, 'alerts'), {
+            type: 'new_booking', name, phone, address, size,
+            createdAt: Date.now(), read: false
+        });
         goTo('my-booking');
         document.getElementById('search-phone').value = phone;
         setTimeout(loadMyBookings, 400);
@@ -838,7 +933,9 @@ window.loadMyBookings = async function() {
         listEl.innerHTML = '<div class="empty"><div class="ei">📭</div><p>해당 연락처로 예약된 내역이 없습니다</p></div>';
         return;
     }
-    listEl.innerHTML = results.map(b => `
+    listEl.innerHTML = results.map(b => {
+        const matched = b.status === '배정완료' || b.status === '출동중';
+        return `
         <div class="booking-card-item">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <div>
@@ -851,12 +948,30 @@ window.loadMyBookings = async function() {
             ${b.facilityRequest ? '<p class="small text-primary fw-bold mb-1">✅ 시설보완 작업 요청됨</p>' : ''}
             ${b.memo ? `<p class="small text-muted mb-1">📝 ${b.memo}</p>` : ''}
             <p class="small text-muted mb-0" style="font-size:0.72rem;">${b.dateStr || ''}</p>
-            ${b.workerName ? `<p class="small mb-0 mt-1">👷 담당 작업자: <b>${b.workerName}</b></p>` : ''}
-        </div>
-    `).join('');
+            ${matched && b.workerName ? `
+                <div style="background:#e8f5e9;border-radius:10px;padding:10px;margin-top:8px;">
+                    <p class="small mb-1 fw-bold text-success">✅ 작업자 매칭 완료</p>
+                    <p class="small mb-1">👷 담당: <b>${b.workerName}</b></p>
+                    ${b.workerPhone ? `<a href="tel:${b.workerPhone}" style="display:inline-block;background:#212529;color:white;border-radius:8px;padding:6px 14px;font-size:0.8rem;font-weight:bold;text-decoration:none;">📞 작업자에게 전화하기</a>` : ''}
+                </div>` : ''}
+            ${!matched ? '<p class="small text-muted mt-1">📞 작업자 매칭 후 연락처가 공개됩니다</p>' : ''}
+        </div>`;
+    }).join('');
 };
 
 /* ═══════════════ 공개 작업자 현황 ═══════════════ */
+// 상태별 색상/아이콘
+function workerStatusStyle(st) {
+    const map = {
+        '출근': { dot: 'dot-ready', cls: 'text-success', label: '🟢 출근' },
+        '대기중': { dot: 'dot-ready', cls: 'text-success', label: '🟢 대기중' },
+        '예약중': { dot: 'dot-busy', cls: 'text-warning', label: '🟡 예약중' },
+        '작업중': { dot: 'dot-busy', cls: 'text-danger', label: '🔴 작업중' },
+        '퇴근': { dot: 'dot-off', cls: 'text-secondary', label: '⚫ 퇴근' },
+    };
+    return map[st] || map['대기중'];
+}
+
 window.loadPublicWorkers = function() {
     const listEl = document.getElementById('public-worker-list');
     onValue(ref(db, 'users'), snap => {
@@ -864,7 +979,8 @@ window.loadPublicWorkers = function() {
         if (snap.exists()) {
             snap.forEach(child => {
                 const d = child.val();
-                if ((d.role === 'worker' || d.role === 'admin' || d.role === 'master') && d.status === 'approved')
+                // 마스터 제외, worker/admin만 표시
+                if ((d.role === 'worker' || d.role === 'admin') && d.status === 'approved')
                     workers.push(d);
             });
         }
@@ -872,20 +988,19 @@ window.loadPublicWorkers = function() {
             listEl.innerHTML = '<div class="empty"><p>현재 등록된 작업자가 없습니다</p></div>';
             return;
         }
-        listEl.innerHTML = workers.map(w => `
+        listEl.innerHTML = workers.map(w => {
+            const ss = workerStatusStyle(w.workerStatus);
+            return `
             <div class="worker-public">
                 <div>
                     <div class="fw-bold" style="font-size:0.9rem;">
-                        <span class="status-dot ${w.workerStatus === '대기중' ? 'dot-ready' : 'dot-busy'}"></span>
-                        ${w.name} ${w.role === 'master' ? '(본점 대표)' : ''}
+                        <span class="status-dot ${ss.dot}"></span>
+                        ${w.name}
                     </div>
-                    <div class="small fw-bold ${w.workerStatus === '대기중' ? 'text-success' : 'text-danger'}">
-                        ${w.workerStatus || '대기중'} / ${w.area || '전지역'} 긴급출동
-                    </div>
+                    <div class="small fw-bold ${ss.cls}">${ss.label} / ${w.area || '전지역'}</div>
                 </div>
-                ${w.phone ? `<a href="tel:${w.phone}" class="call-btn">📞 전화하기</a>` : ''}
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
     });
 };
 
@@ -966,13 +1081,22 @@ window.switchAdminTab = function(tabId) {
 };
 
 /* ═══════════════ 관리자 리스너 ═══════════════ */
+let lastBookingCount = -1; // 초기 로드 시 알람 방지
+
 window.startAdminListeners = function() {
-    // 이미 구독 중이면 재구독 안 함
     if (!unsubBk) {
         unsubBk = onValue(ref(db, 'bookings'), snap => {
             allBookings = [];
             if (snap.exists()) snap.forEach(c => allBookings.push({ id: c.key, ...c.val() }));
             allBookings.sort((a,b) => b.createdAt - a.createdAt);
+
+            // 새 예약 알람 (작업자/관리자용)
+            if (lastBookingCount >= 0 && allBookings.length > lastBookingCount) {
+                const newest = allBookings[0];
+                triggerAlert('📋 새 예약 접수!', `${newest.name} / ${newest.size} / ${newest.address}`);
+            }
+            lastBookingCount = allBookings.length;
+
             renderBookings();
             renderDashboard();
         });
@@ -984,6 +1108,23 @@ window.startAdminListeners = function() {
         });
     }
 };
+
+/* ─── 알람 트리거 (소리 + 토스트) ─── */
+function triggerAlert(title, body) {
+    // 토스트 알람
+    showToast('🔔 ' + title + ' — ' + body);
+    // 브라우저 알람 (권한 있을 때)
+    if (Notification.permission === 'granted') {
+        new Notification(title, { body, icon: '배경화면.png' });
+    } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(p => {
+            if (p === 'granted') new Notification(title, { body });
+        });
+    }
+    // 진동 (모바일)
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+}
+window.triggerAlert = triggerAlert;
 
 /* ─── 대시보드 렌더 ─── */
 function renderDashboard() {
@@ -1040,10 +1181,16 @@ function renderBookings() {
                 ).join('')}
             </div>
             ${b.status === '배정완료' || b.status === '출동중' ? `
-            <div class="mt-2 d-flex gap-2">
-                <input type="text" id="wa-${b.id}" class="form-control form-control-sm"
-                    placeholder="담당 작업자 이름" value="${b.workerName||''}" style="border-radius:8px;">
-                <button class="btn btn-sm btn-dark" style="border-radius:8px;white-space:nowrap;" onclick="assignWorker('${b.id}')">배정</button>
+            <div class="mt-2">
+                <div class="d-flex gap-2 mb-1">
+                    <input type="text" id="wa-${b.id}" class="form-control form-control-sm"
+                        placeholder="작업자 이름" value="${b.workerName||''}" style="border-radius:8px;">
+                </div>
+                <div class="d-flex gap-2">
+                    <input type="tel" id="wp-${b.id}" class="form-control form-control-sm"
+                        placeholder="작업자 전화번호" value="${b.workerPhone||''}" style="border-radius:8px;">
+                    <button class="btn btn-sm btn-dark" style="border-radius:8px;white-space:nowrap;" onclick="assignWorker('${b.id}')">배정</button>
+                </div>
             </div>` : ''}
         </div>
     `).join('');
@@ -1056,10 +1203,20 @@ window.changeStatus = async function(bkId, status) {
     showToast('상태 변경: ' + status);
 };
 window.assignWorker = async function(bkId) {
-    const el = document.getElementById('wa-' + bkId);
-    if (!el || !el.value.trim()) return showToast('작업자 이름을 입력하세요.');
-    await update(ref(db, 'bookings/' + bkId), { workerName: el.value.trim() });
-    showToast('작업자 배정 완료');
+    const nameEl  = document.getElementById('wa-'  + bkId);
+    const phoneEl = document.getElementById('wp-'  + bkId);
+    if (!nameEl || !nameEl.value.trim()) return showToast('작업자 이름을 입력하세요.');
+    await update(ref(db, 'bookings/' + bkId), {
+        workerName: nameEl.value.trim(),
+        workerPhone: phoneEl ? phoneEl.value.trim() : ''
+    });
+    // 고객 매칭 알람 저장
+    await push(ref(db, 'customer_alerts'), {
+        bookingId: bkId, type: 'matched',
+        workerName: nameEl.value.trim(),
+        createdAt: Date.now(), read: false
+    });
+    showToast('✅ 작업자 배정 완료 — 고객 알람 전송됨');
 };
 
 /* ─── 작업자 렌더 ─── */
@@ -1080,7 +1237,13 @@ function renderWorkers(snap) {
         listEl.innerHTML = '<div class="empty"><div class="ei">👷</div><p>작업자가 없습니다</p></div>';
         return;
     }
-    listEl.innerHTML = workers.map(w => `
+    listEl.innerHTML = workers.map(w => {
+        const ss = workerStatusStyle(w.workerStatus || '대기중');
+        const cycle = ['출근','대기중','예약중','작업중','퇴근'];
+        const cur = w.workerStatus || '대기중';
+        const nextIdx = (cycle.indexOf(cur)+1) % cycle.length;
+        const next = cycle[nextIdx];
+        return `
         <div class="worker-manage-card">
             <div>
                 <div class="fw-bold">
@@ -1091,23 +1254,23 @@ function renderWorkers(snap) {
                     </span>
                 </div>
                 <div class="text-muted small">${w.area||''} · ${w.phone||''}</div>
-                <div class="small mt-1 ${w.workerStatus==='대기중'?'text-success fw-bold':'text-danger'}">
-                    ${w.workerStatus==='대기중'?'🟢 대기중':'🔴 출동중'}
-                </div>
+                <div class="small mt-1 fw-bold ${ss.cls}">${ss.label}</div>
             </div>
             ${w.role !== 'master' ? `
-            <button class="toggle-btn ${w.workerStatus==='대기중'?'toggle-ready':'toggle-busy'}"
-                onclick="toggleWorker('${w.key}','${w.workerStatus||'대기중'}')">
-                ${w.workerStatus==='대기중'?'대기중 →<br>출동중 변경':'출동중 →<br>대기중 변경'}
+            <button class="toggle-btn ${cur==='퇴근'||cur==='작업중'?'toggle-busy':'toggle-ready'}"
+                onclick="toggleWorker('${w.key}','${cur}')">
+                → ${next}
             </button>` : ''}
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
 }
 
 window.toggleWorker = async function(key, cur) {
-    const next = cur === '대기중' ? '출동중' : '대기중';
+    const cycle = ['출근', '대기중', '예약중', '작업중', '퇴근'];
+    const idx = cycle.indexOf(cur);
+    const next = cycle[(idx + 1) % cycle.length];
     await update(ref(db, 'users/' + key), { workerStatus: next });
-    showToast('상태 변경: ' + next);
+    showToast('상태: ' + next);
 };
 
 /* ─── 회원 관리 렌더 ─── */
@@ -1162,6 +1325,10 @@ window.promoteMem = async k => { await update(ref(db,'users/'+k),{role:'admin'})
 window.demoteMem  = async k => { await update(ref(db,'users/'+k),{role:'worker'}); showToast('작업자로 변경 완료'); };
 
 /* ── 앱 시작 ── */
+// 알람 권한 요청
+if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+}
 goTo('main');
 </script>
 </body>
