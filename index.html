@@ -353,6 +353,12 @@
             background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
         }
 
+        /* ── 알람 배너 애니메이션 ── */
+        @keyframes slideDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to   { transform: translateY(0);     opacity: 1; }
+        }
+
         /* ── 토스트 ── */
         .toast-bar {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
@@ -1036,8 +1042,12 @@ window.doLogin = async function() {
 /* ═══════════════ 로그아웃 ═══════════════ */
 window.doLogout = function() {
     currentUser = null;
-    if (unsubBk) { unsubBk(); unsubBk = null; }
-    if (unsubWk) { unsubWk(); unsubWk = null; }
+    if (unsubBk)    { unsubBk();    unsubBk    = null; }
+    if (unsubWk)    { unsubWk();    unsubWk    = null; }
+    if (unsubAlert) { unsubAlert(); unsubAlert = null; }
+    if (alertSoundInterval) { clearInterval(alertSoundInterval); alertSoundInterval = null; }
+    dismissAlert();
+    lastBookingCount = -1;
     goTo('main');
     showToast('로그아웃 되었습니다.');
 };
@@ -1081,7 +1091,9 @@ window.switchAdminTab = function(tabId) {
 };
 
 /* ═══════════════ 관리자 리스너 ═══════════════ */
-let lastBookingCount = -1; // 초기 로드 시 알람 방지
+let lastBookingCount = -1;
+let unsubAlert = null;
+let alertInitDone = false; // 최초 로드 기존 알람 무시
 
 window.startAdminListeners = function() {
     if (!unsubBk) {
@@ -1090,13 +1102,12 @@ window.startAdminListeners = function() {
             if (snap.exists()) snap.forEach(c => allBookings.push({ id: c.key, ...c.val() }));
             allBookings.sort((a,b) => b.createdAt - a.createdAt);
 
-            // 새 예약 알람 (작업자/관리자용)
+            // 새 예약 알람
             if (lastBookingCount >= 0 && allBookings.length > lastBookingCount) {
                 const newest = allBookings[0];
-                triggerAlert('📋 새 예약 접수!', `${newest.name} / ${newest.size} / ${newest.address}`);
+                triggerAlert('📋 새 예약 접수!', `${newest.name} · ${newest.size} · ${newest.address}`);
             }
             lastBookingCount = allBookings.length;
-
             renderBookings();
             renderDashboard();
         });
@@ -1107,22 +1118,121 @@ window.startAdminListeners = function() {
             if (currentUser?.role === 'master') renderMembers(snap);
         });
     }
-};
-
-/* ─── 알람 트리거 (소리 + 토스트) ─── */
-function triggerAlert(title, body) {
-    // 토스트 알람
-    showToast('🔔 ' + title + ' — ' + body);
-    // 브라우저 알람 (권한 있을 때)
-    if (Notification.permission === 'granted') {
-        new Notification(title, { body, icon: '배경화면.png' });
-    } else if (Notification.permission !== 'denied') {
-        Notification.requestPermission().then(p => {
-            if (p === 'granted') new Notification(title, { body });
+    // ── Firebase alerts 실시간 구독 (로그인 시 항상 구독) ──
+    if (!unsubAlert) {
+        let initKeys = new Set();
+        let initLoaded = false;
+        unsubAlert = onValue(ref(db, 'alerts'), snap => {
+            if (!snap.exists()) { initLoaded = true; return; }
+            const keys = [];
+            snap.forEach(c => keys.push(c.key));
+            if (!initLoaded) {
+                // 최초 로드: 기존 키만 기억, 알람 안 울림
+                keys.forEach(k => initKeys.add(k));
+                initLoaded = true;
+                return;
+            }
+            // 새로 추가된 키만 알람
+            keys.forEach(k => {
+                if (!initKeys.has(k)) {
+                    initKeys.add(k);
+                    const d = snap.child(k).val();
+                    triggerAlert(
+                        '📋 새 예약 접수!',
+                        `${d.name || ''} · ${d.size || ''} · ${d.address || ''}`
+                    );
+                }
+            });
         });
     }
-    // 진동 (모바일)
-    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+};
+
+/* ─── Web Audio 알람 소리 생성 ─── */
+let alertSoundInterval = null;
+
+function playAlertSound() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        // 3번 반복 비프음
+        [0, 0.35, 0.7].forEach(offset => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, ctx.currentTime + offset);
+            osc.frequency.setValueAtTime(660, ctx.currentTime + offset + 0.15);
+            gain.gain.setValueAtTime(0.8, ctx.currentTime + offset);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.28);
+            osc.start(ctx.currentTime + offset);
+            osc.stop(ctx.currentTime + offset + 0.3);
+        });
+    } catch(e) { console.log('소리 재생 오류:', e); }
+}
+
+/* ─── 알람 배너 표시 ─── */
+function showAlertBanner(title, body) {
+    // 기존 배너 제거
+    const existing = document.getElementById('alert-banner');
+    if (existing) existing.remove();
+
+    const banner = document.createElement('div');
+    banner.id = 'alert-banner';
+    banner.innerHTML = `
+        <div style="
+            position:fixed; top:0; left:0; right:0; z-index:99999;
+            background:linear-gradient(135deg,#e74c3c,#c0392b);
+            color:white; padding:16px 20px 14px;
+            box-shadow:0 4px 20px rgba(0,0,0,0.4);
+            animation: slideDown 0.3s ease;
+        ">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <div>
+                    <div style="font-weight:900;font-size:1rem;margin-bottom:4px;">🔔 ${title}</div>
+                    <div style="font-size:0.82rem;opacity:0.92;">${body}</div>
+                </div>
+                <button onclick="dismissAlert()" style="
+                    background:rgba(255,255,255,0.2);border:none;color:white;
+                    border-radius:8px;padding:6px 12px;font-size:0.8rem;cursor:pointer;
+                    margin-left:10px;flex-shrink:0;
+                ">확인</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(banner);
+
+    // 소리 + 진동 반복 (확인 누를 때까지)
+    playAlertSound();
+    if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 300]);
+
+    // 5초마다 소리 반복
+    if (alertSoundInterval) clearInterval(alertSoundInterval);
+    alertSoundInterval = setInterval(() => {
+        playAlertSound();
+        if (navigator.vibrate) navigator.vibrate([300, 150, 300]);
+    }, 5000);
+}
+
+window.dismissAlert = function() {
+    const b = document.getElementById('alert-banner');
+    if (b) b.remove();
+    if (alertSoundInterval) { clearInterval(alertSoundInterval); alertSoundInterval = null; }
+};
+
+/* ─── 알람 트리거 ─── */
+function triggerAlert(title, body) {
+    showToast('🔔 ' + title);
+    showAlertBanner(title, body);
+    // 브라우저 Notification (백그라운드용)
+    if (typeof Notification !== 'undefined') {
+        if (Notification.permission === 'granted') {
+            new Notification(title, { body });
+        } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission().then(p => {
+                if (p === 'granted') new Notification(title, { body });
+            });
+        }
+    }
 }
 window.triggerAlert = triggerAlert;
 
