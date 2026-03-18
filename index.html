@@ -1046,7 +1046,7 @@ window.loadMyBookings = async function() {
 
 /* ═══════════════ 공개 작업자 현황 ═══════════════ */
 // 상태별 색상/아이콘
-function workerStatusStyle(st) {
+window.workerStatusStyle = function workerStatusStyle(st) {
     const map = {
         '대기중': { dot: 'dot-ready', cls: 'text-success',   label: '🟢 대기중' },
         '이동중': { dot: 'dot-busy',  cls: 'text-warning',   label: '🚗 이동중' },
@@ -1291,7 +1291,7 @@ window.setMyStatus = async function(status) {
     }
 };
 
-function renderMyStatusCard(status) {
+window.renderMyStatusCard = function renderMyStatusCard(status) {
     const labelEl = document.getElementById('my-status-label');
     if (!labelEl) return;
     const map = {
@@ -1312,7 +1312,7 @@ function renderMyStatusCard(status) {
 }
 
 // 콜 배지 업데이트
-function updateCallBadge(count) {
+window.updateCallBadge = function updateCallBadge(count) {
     const badge = document.getElementById('call-badge');
     if (!badge) return;
     if (count > 0) {
@@ -1326,7 +1326,7 @@ function updateCallBadge(count) {
 }
 
 // 콜 목록 렌더
-function renderCallList(pending) {
+window.renderCallList = function renderCallList(pending) {
     const listEl = document.getElementById('call-list');
     if (!listEl) return;
     if (!pending.length) {
@@ -1415,7 +1415,7 @@ window.acceptCall = async function(bkId, name, phone) {
 };
 
 // 알람 울릴 상태인지 체크 (대기중만)
-function canReceiveAlarm() {
+window.canReceiveAlarm = function canReceiveAlarm() {
     if (!currentUser) return false;
     const st = currentUser.workerStatus || '대기중';
     // 퇴근/이동중/작업중은 알람 안 울림
@@ -1423,7 +1423,7 @@ function canReceiveAlarm() {
 }
 
 // 소리 재생 (음소거 여부 감지 - 음소거면 진동만)
-function playAlarmWithVibration() {
+window.playAlarmWithVibration = function playAlarmWithVibration() {
     // 진동은 항상 실행 (음소거와 무관)
     if (navigator.vibrate) navigator.vibrate([400, 150, 400, 150, 400]);
 
@@ -1432,7 +1432,7 @@ function playAlarmWithVibration() {
 }
 
 // 콜 알람 시작 (10초마다 반복)
-function startCallAlarm(booking) {
+window.startCallAlarm = function startCallAlarm(booking) {
     if (!canReceiveAlarm()) return; // 대기중 아니면 알람 안 울림
     stopCallAlarm();
     const msg = `${booking.name} · ${booking.size} · ${booking.address}`;
@@ -1452,7 +1452,7 @@ function startCallAlarm(booking) {
 }
 
 // 콜 알람 중지
-function stopCallAlarm() {
+window.stopCallAlarm = function stopCallAlarm() {
     if (callAlarmTimer) { clearInterval(callAlarmTimer); callAlarmTimer = null; }
     dismissAlert();
 }
@@ -1462,7 +1462,7 @@ let alertSoundInterval = null;
 let _audioCtx = null; // 전역 AudioContext (한 번만 생성)
 
 // 사용자 터치 시 AudioContext 미리 활성화
-function unlockAudio() {
+window.unlockAudio = function unlockAudio() {
     if (_audioCtx) return;
     try {
         _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1476,7 +1476,7 @@ function unlockAudio() {
     } catch(e) { console.log('오디오 활성화 실패:', e); }
 }
 
-function playAlertSound() {
+window.playAlertSound = function playAlertSound() {
     try {
         // AudioContext 없으면 새로 생성
         if (!_audioCtx) {
@@ -1512,7 +1512,7 @@ function playAlertSound() {
 }
 
 /* ─── 알람 배너 표시 ─── */
-function showAlertBanner(title, body) {
+window.showAlertBanner = function showAlertBanner(title, body) {
     // 기존 배너 제거
     const existing = document.getElementById('alert-banner');
     if (existing) existing.remove();
@@ -1561,7 +1561,7 @@ window.dismissAlert = function() {
 };
 
 /* ─── 알람 트리거 ─── */
-function triggerAlert(title, body) {
+window.triggerAlert = function triggerAlert(title, body) {
     // 대기중일 때만 소리/진동 알람
     if (canReceiveAlarm()) {
         playAlarmWithVibration();
@@ -1579,10 +1579,9 @@ function triggerAlert(title, body) {
         }
     }
 }
-window.triggerAlert = triggerAlert;
 
 /* ─── 대시보드 렌더 ─── */
-function renderDashboard() {
+window.renderDashboard = function renderDashboard() {
     const todayStr = new Date().toLocaleDateString('ko-KR');
     const todayCnt   = allBookings.filter(b => (b.dateStr || '').startsWith(todayStr)).length;
     const pendingCnt = allBookings.filter(b => b.status === '접수중').length;
@@ -1607,7 +1606,7 @@ function renderDashboard() {
 }
 
 /* ─── 예약 목록 렌더 ─── */
-function renderBookings() {
+window.renderBookings = function renderBookings() {
     const listEl   = document.getElementById('bk-list');
     const filtered = bkFilter ? allBookings.filter(b => b.status === bkFilter) : allBookings;
     if (!filtered.length) {
@@ -1677,7 +1676,7 @@ window.assignWorker = async function(bkId) {
 };
 
 /* ─── 작업자 렌더 ─── */
-function renderWorkers(snap) {
+window.renderWorkers = function renderWorkers(snap) {
     const listEl = document.getElementById('wk-list');
     const statEl = document.getElementById('stat-ready');
     const workers = [];
@@ -1731,7 +1730,7 @@ window.toggleWorker = async function(key, cur) {
 };
 
 /* ─── 회원 관리 렌더 ─── */
-function renderMembers(snap) {
+window.renderMembers = function renderMembers(snap) {
     const pEl = document.getElementById('mem-pending');
     const aEl = document.getElementById('mem-approved');
     const pending = [], approved = [];
