@@ -383,6 +383,38 @@
 
         /* 섹션 제목 구분선 */
         .sec-head { border-left: 5px solid #222; padding-left: 10px; font-size: 1rem; margin-bottom: 14px; }
+
+        /* 상태 버튼 */
+        .ws-btn {
+            border: none; border-radius: 20px; color: white;
+            font-size: 0.78rem; font-weight: bold; padding: 7px 14px;
+            cursor: pointer; opacity: 0.6; transition: all 0.15s;
+        }
+        .ws-btn.active-st { opacity: 1; box-shadow: 0 0 0 3px white; transform: scale(1.05); }
+        .ws-btn:active { transform: scale(0.96); }
+
+        /* 실시간 콜 카드 */
+        .call-card {
+            background: white; border-radius: 16px;
+            padding: 14px; margin-bottom: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            border-left: 4px solid #e74c3c;
+            animation: callPulse 2s ease-in-out infinite;
+        }
+        .call-card.matched { border-left-color: #27ae60; animation: none; opacity: 0.7; }
+        @keyframes callPulse {
+            0%,100% { box-shadow: 0 2px 12px rgba(231,76,60,0.15); }
+            50%      { box-shadow: 0 2px 20px rgba(231,76,60,0.45); }
+        }
+        .call-accept-btn {
+            background: linear-gradient(135deg,#27ae60,#2ecc71);
+            color: white; border: none; border-radius: 12px;
+            padding: 10px 0; width: 100%; font-weight: 900;
+            font-size: 0.95rem; cursor: pointer; margin-top: 10px;
+            transition: all 0.15s;
+        }
+        .call-accept-btn:active { transform: scale(0.97); }
+        .call-accept-btn:disabled { background: #aaa; }
     </style>
 </head>
 <body>
@@ -738,6 +770,15 @@
     <!-- 탭 네비 -->
     <div class="admin-tab-nav">
         <div class="admin-tab active" data-tab="adm-dashboard" onclick="switchAdminTab('adm-dashboard')">📊 대시보드</div>
+        <div class="admin-tab" id="tab-call-btn" data-tab="adm-call" onclick="switchAdminTab('adm-call')">
+            🚨 실시간 콜
+            <span id="call-badge" style="
+                display:none; background:#e74c3c; color:white;
+                border-radius:50%; width:16px; height:16px; font-size:0.6rem;
+                font-weight:900; line-height:16px; text-align:center;
+                margin-left:4px; vertical-align:middle;
+            ">N</span>
+        </div>
         <div class="admin-tab"        data-tab="adm-bookings"  onclick="switchAdminTab('adm-bookings')">📋 예약관리</div>
         <div class="admin-tab"        data-tab="adm-workers"   onclick="switchAdminTab('adm-workers')">👷 작업자</div>
         <div class="admin-tab master-tab" data-tab="adm-members" onclick="switchAdminTab('adm-members')" style="display:none;">👥 회원관리</div>
@@ -755,6 +796,35 @@
         <div id="dash-recent"></div>
         <hr>
         <button class="btn btn-outline-danger w-100" style="border-radius:12px;padding:14px;font-weight:bold;" onclick="doLogout()">로그아웃</button>
+    </div>
+
+    <!-- 실시간 콜 탭 -->
+    <div id="adm-call" class="admin-tab-content" style="padding:0;">
+
+        <!-- 내 상태 카드 -->
+        <div id="my-status-card" style="
+            background:linear-gradient(135deg,#1a1a2e,#16213e);
+            padding:18px 16px 14px; color:white;
+        ">
+            <div style="font-size:0.75rem;opacity:0.6;margin-bottom:6px;">내 현재 상태</div>
+            <div id="my-status-label" style="font-size:1.1rem;font-weight:900;margin-bottom:12px;">⏳ 로딩중...</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="ws-btn" data-st="대기중" onclick="setMyStatus('대기중')" style="background:#27ae60;">🟢 대기중</button>
+                <button class="ws-btn" data-st="이동중" onclick="setMyStatus('이동중')" style="background:#f39c12;">🚗 이동중</button>
+                <button class="ws-btn" data-st="작업중" onclick="setMyStatus('작업중')" style="background:#e74c3c;">🔴 작업중</button>
+                <button class="ws-btn" data-st="퇴근"   onclick="setMyStatus('퇴근')"   style="background:#555;">⚫ 퇴근</button>
+            </div>
+        </div>
+
+        <!-- 접수 대기 콜 목록 -->
+        <div style="padding:12px 12px 4px;">
+            <div style="font-size:0.78rem;color:#999;font-weight:bold;letter-spacing:0.5px;">
+                🚨 접수 대기 중인 콜 <span id="pending-count" style="color:#e74c3c;"></span>
+            </div>
+        </div>
+        <div id="call-list" style="padding:0 12px 80px;">
+            <div class="loading">⏳ 실시간 콜 불러오는 중...</div>
+        </div>
     </div>
 
     <!-- 예약 관리 -->
@@ -809,8 +879,11 @@ const db = getDatabase(app);
 let currentUser = null;
 let allBookings = [];
 let bkFilter    = '';
-let unsubBk     = null; // 리스너 해제용
+let unsubBk     = null;
 let unsubWk     = null;
+let unsubCall   = null;  // 실시간 콜 리스너
+let callAlarmTimer = null; // 콜 알람 반복 타이머
+let pendingCallKeys = new Set(); // 현재 대기중 콜 키
 
 /* ═══════════════ 마스터 계정 초기화 ═══════════════ */
 (async () => {
@@ -869,7 +942,13 @@ window.goTo = function(key) {
     // 서비스소개 → 작업자 실시간 로드
     if (key === 'about') loadPublicWorkers();
     // 관리자 패널 → 리스너 시작
-    if (key === 'admin-panel') startAdminListeners();
+    if (key === 'admin-panel') {
+        startAdminListeners();
+        // 내 상태 카드 렌더링 (약간 딜레이)
+        setTimeout(() => {
+            if (currentUser) renderMyStatusCard(currentUser.workerStatus || '대기중');
+        }, 300);
+    }
 };
 
 /* ═══════════════ 토스트 ═══════════════ */
@@ -969,11 +1048,10 @@ window.loadMyBookings = async function() {
 // 상태별 색상/아이콘
 function workerStatusStyle(st) {
     const map = {
-        '출근': { dot: 'dot-ready', cls: 'text-success', label: '🟢 출근' },
-        '대기중': { dot: 'dot-ready', cls: 'text-success', label: '🟢 대기중' },
-        '예약중': { dot: 'dot-busy', cls: 'text-warning', label: '🟡 예약중' },
-        '작업중': { dot: 'dot-busy', cls: 'text-danger', label: '🔴 작업중' },
-        '퇴근': { dot: 'dot-off', cls: 'text-secondary', label: '⚫ 퇴근' },
+        '대기중': { dot: 'dot-ready', cls: 'text-success',   label: '🟢 대기중' },
+        '이동중': { dot: 'dot-busy',  cls: 'text-warning',   label: '🚗 이동중' },
+        '작업중': { dot: 'dot-busy',  cls: 'text-danger',    label: '🔴 작업중' },
+        '퇴근':   { dot: 'dot-off',   cls: 'text-secondary', label: '⚫ 퇴근'   },
     };
     return map[st] || map['대기중'];
 }
@@ -1045,7 +1123,10 @@ window.doLogout = function() {
     if (unsubBk)    { unsubBk();    unsubBk    = null; }
     if (unsubWk)    { unsubWk();    unsubWk    = null; }
     if (unsubAlert) { unsubAlert(); unsubAlert = null; }
+    if (unsubCall)  { unsubCall();  unsubCall  = null; }
     if (alertSoundInterval) { clearInterval(alertSoundInterval); alertSoundInterval = null; }
+    if (callAlarmTimer)     { clearInterval(callAlarmTimer);     callAlarmTimer     = null; }
+    pendingCallKeys.clear();
     dismissAlert();
     lastBookingCount = -1;
     goTo('main');
@@ -1118,6 +1199,41 @@ window.startAdminListeners = function() {
             if (currentUser?.role === 'master') renderMembers(snap);
         });
     }
+    // ── 실시간 콜 구독 ──
+    if (!unsubCall) {
+        let callInitDone = false;
+        unsubCall = onValue(ref(db, 'bookings'), snap => {
+            const pending = [];
+            if (snap.exists()) {
+                snap.forEach(c => {
+                    const d = c.val();
+                    if (d.status === '접수중') pending.push({ id: c.key, ...d });
+                });
+            }
+            pending.sort((a,b) => b.createdAt - a.createdAt);
+
+            // 새 콜 감지
+            if (callInitDone) {
+                pending.forEach(p => {
+                    if (!pendingCallKeys.has(p.id)) {
+                        startCallAlarm(p);
+                    }
+                });
+            }
+
+            // 콜 사라진 것 처리 (배정됨)
+            const newKeys = new Set(pending.map(p => p.id));
+            pendingCallKeys.forEach(k => {
+                if (!newKeys.has(k)) stopCallAlarm();
+            });
+            pendingCallKeys = newKeys;
+
+            renderCallList(pending);
+            updateCallBadge(pending.length);
+            callInitDone = true;
+        });
+    }
+
     // ── Firebase alerts 실시간 구독 (로그인 시 항상 구독) ──
     if (!unsubAlert) {
         let initKeys = new Set();
@@ -1146,6 +1262,122 @@ window.startAdminListeners = function() {
         });
     }
 };
+
+/* ═══════════════ 실시간 콜 관련 ═══════════════ */
+
+// 내 상태 설정
+window.setMyStatus = async function(status) {
+    if (!currentUser) return;
+    await update(ref(db, 'users/' + currentUser.key), { workerStatus: status });
+    currentUser.workerStatus = status;
+    renderMyStatusCard(status);
+    showToast('상태 변경: ' + status);
+};
+
+function renderMyStatusCard(status) {
+    const labelEl = document.getElementById('my-status-label');
+    if (!labelEl) return;
+    const map = {
+        '대기중': '🟢 대기중 — 콜 수신 가능',
+        '이동중': '🚗 이동중',
+        '작업중': '🔴 작업중',
+        '퇴근':   '⚫ 퇴근',
+    };
+    labelEl.textContent = map[status] || status;
+    // 버튼 활성화 표시
+    document.querySelectorAll('.ws-btn').forEach(btn => {
+        btn.classList.toggle('active-st', btn.dataset.st === status);
+    });
+}
+
+// 콜 배지 업데이트
+function updateCallBadge(count) {
+    const badge = document.getElementById('call-badge');
+    if (!badge) return;
+    if (count > 0) {
+        badge.style.display = 'inline-block';
+        badge.textContent = count;
+    } else {
+        badge.style.display = 'none';
+    }
+    const cntEl = document.getElementById('pending-count');
+    if (cntEl) cntEl.textContent = count > 0 ? `(${count}건)` : '';
+}
+
+// 콜 목록 렌더
+function renderCallList(pending) {
+    const listEl = document.getElementById('call-list');
+    if (!listEl) return;
+    if (!pending.length) {
+        listEl.innerHTML = `
+            <div style="text-align:center;padding:50px 20px;color:#ccc;">
+                <div style="font-size:2.5rem;margin-bottom:8px;">📭</div>
+                <p style="font-size:0.85rem;">현재 대기 중인 콜이 없습니다</p>
+                <p style="font-size:0.75rem;color:#bbb;">새 예약이 접수되면 자동으로 표시됩니다</p>
+            </div>`;
+        return;
+    }
+    listEl.innerHTML = pending.map(b => `
+        <div class="call-card" id="call-${b.id}">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+                <div>
+                    <div style="font-weight:900;font-size:0.95rem;color:#e74c3c;">🚨 새 콜 접수</div>
+                    <div style="font-size:0.72rem;color:#999;margin-top:2px;">${b.dateStr || ''}</div>
+                </div>
+                <span style="background:#ffeaa7;color:#333;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:bold;">접수중</span>
+            </div>
+            <div style="font-size:0.85rem;color:#333;line-height:1.8;">
+                <div>👤 <b>${b.name}</b> · ${b.size}</div>
+                <div>📍 ${b.address}</div>
+                ${b.facilityRequest ? '<div style="color:#007bff;font-weight:bold;">🔧 시설보완 요청</div>' : ''}
+                ${b.memo ? `<div style="color:#888;">📝 ${b.memo}</div>` : ''}
+            </div>
+            <button class="call-accept-btn" onclick="acceptCall('${b.id}','${b.name}')">
+                ✅ 콜 수락하기
+            </button>
+        </div>
+    `).join('');
+}
+
+// 콜 수락
+window.acceptCall = async function(bkId, name) {
+    if (!currentUser) return;
+    if (!confirm(`${name} 고객의 콜을 수락하시겠습니까?`)) return;
+    await update(ref(db, 'bookings/' + bkId), {
+        status: '배정완료',
+        workerName: currentUser.name,
+        workerPhone: currentUser.phone || '',
+        acceptedAt: Date.now()
+    });
+    await update(ref(db, 'users/' + currentUser.key), { workerStatus: '이동중' });
+    currentUser.workerStatus = '이동중';
+    renderMyStatusCard('이동중');
+    stopCallAlarm();
+    showToast('✅ 콜 수락! 상태가 이동중으로 변경됐습니다.');
+    switchAdminTab('adm-bookings');
+};
+
+// 콜 알람 시작 (10초마다 반복)
+function startCallAlarm(booking) {
+    stopCallAlarm(); // 기존 타이머 초기화
+    const msg = `${booking.name} · ${booking.size} · ${booking.address}`;
+    triggerAlert('🚨 새 콜 접수!', msg);
+    callAlarmTimer = setInterval(() => {
+        // 아직 접수중인지 확인
+        if (pendingCallKeys.has(booking.id)) {
+            playAlertSound();
+            if (navigator.vibrate) navigator.vibrate([400, 200, 400]);
+            showToast('🚨 미수락 콜 있음! — ' + booking.name);
+        } else {
+            stopCallAlarm();
+        }
+    }, 10000); // 10초마다
+}
+
+// 콜 알람 중지
+function stopCallAlarm() {
+    if (callAlarmTimer) { clearInterval(callAlarmTimer); callAlarmTimer = null; }
+}
 
 /* ─── Web Audio 알람 소리 생성 ─── */
 let alertSoundInterval = null;
@@ -1349,7 +1581,7 @@ function renderWorkers(snap) {
     }
     listEl.innerHTML = workers.map(w => {
         const ss = workerStatusStyle(w.workerStatus || '대기중');
-        const cycle = ['출근','대기중','예약중','작업중','퇴근'];
+        const cycle = ['대기중','이동중','작업중','퇴근'];
         const cur = w.workerStatus || '대기중';
         const nextIdx = (cycle.indexOf(cur)+1) % cycle.length;
         const next = cycle[nextIdx];
@@ -1376,7 +1608,7 @@ function renderWorkers(snap) {
 }
 
 window.toggleWorker = async function(key, cur) {
-    const cycle = ['출근', '대기중', '예약중', '작업중', '퇴근'];
+    const cycle = ['대기중', '이동중', '작업중', '퇴근'];
     const idx = cycle.indexOf(cur);
     const next = cycle[(idx + 1) % cycle.length];
     await update(ref(db, 'users/' + key), { workerStatus: next });
