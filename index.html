@@ -1114,7 +1114,12 @@ window.doLogin = async function() {
     });
     showToast(`환영합니다, ${found.name}님!`);
     goTo('admin-panel');
-    switchAdminTab('adm-dashboard');
+    // 로그인 직후 명시적으로 리스너 시작 + 상태카드 렌더
+    startAdminListeners();
+    setTimeout(() => {
+        renderMyStatusCard(found.workerStatus || '대기중');
+        switchAdminTab('adm-call'); // 로그인 후 실시간 콜 탭으로
+    }, 200);
 };
 
 /* ═══════════════ 로그아웃 ═══════════════ */
@@ -1212,11 +1217,16 @@ window.startAdminListeners = function() {
             }
             pending.sort((a,b) => b.createdAt - a.createdAt);
 
-            // 새 콜 감지
+            // 새 콜 감지 (대기중일 때만 알람)
             if (callInitDone) {
                 pending.forEach(p => {
                     if (!pendingCallKeys.has(p.id)) {
-                        startCallAlarm(p);
+                        if (canReceiveAlarm()) {
+                            startCallAlarm(p);
+                        } else {
+                            // 알람 없이 배지/목록만 업데이트
+                            updateCallBadge(pending.length);
+                        }
                     }
                 });
             }
@@ -1271,19 +1281,30 @@ window.setMyStatus = async function(status) {
     await update(ref(db, 'users/' + currentUser.key), { workerStatus: status });
     currentUser.workerStatus = status;
     renderMyStatusCard(status);
-    showToast('상태 변경: ' + status);
+    // 퇴근/이동중/작업중으로 바꾸면 알람 중지
+    if (status === '퇴근' || status === '이동중' || status === '작업중') {
+        stopCallAlarm();
+        dismissAlert();
+        showToast('상태 변경: ' + status + ' (알람 일시 중지)');
+    } else {
+        showToast('상태 변경: ' + status + ' — 콜 알람 활성화');
+    }
 };
 
 function renderMyStatusCard(status) {
     const labelEl = document.getElementById('my-status-label');
     if (!labelEl) return;
     const map = {
-        '대기중': '🟢 대기중 — 콜 수신 가능',
-        '이동중': '🚗 이동중',
-        '작업중': '🔴 작업중',
-        '퇴근':   '⚫ 퇴근',
+        '대기중': { text: '🟢 대기중', sub: '콜 알람 ON — 새 예약 즉시 알림', color: '#27ae60' },
+        '이동중': { text: '🚗 이동중', sub: '콜 알람 OFF', color: '#f39c12' },
+        '작업중': { text: '🔴 작업중', sub: '콜 알람 OFF', color: '#e74c3c' },
+        '퇴근':   { text: '⚫ 퇴근',   sub: '콜 알람 OFF', color: '#888' },
     };
-    labelEl.textContent = map[status] || status;
+    const info = map[status] || map['대기중'];
+    labelEl.innerHTML = `
+        <span style="font-size:1.1rem;font-weight:900;">${info.text}</span>
+        <span style="font-size:0.75rem;opacity:0.7;margin-left:8px;">${info.sub}</span>
+    `;
     // 버튼 활성화 표시
     document.querySelectorAll('.ws-btn').forEach(btn => {
         btn.classList.toggle('active-st', btn.dataset.st === status);
@@ -1393,26 +1414,47 @@ window.acceptCall = async function(bkId, name, phone) {
     }
 };
 
+// 알람 울릴 상태인지 체크 (대기중만)
+function canReceiveAlarm() {
+    if (!currentUser) return false;
+    const st = currentUser.workerStatus || '대기중';
+    // 퇴근/이동중/작업중은 알람 안 울림
+    return st === '대기중';
+}
+
+// 소리 재생 (음소거 여부 감지 - 음소거면 진동만)
+function playAlarmWithVibration() {
+    // 진동은 항상 실행 (음소거와 무관)
+    if (navigator.vibrate) navigator.vibrate([400, 150, 400, 150, 400]);
+
+    // 소리 시도 - Web Audio는 음소거 상태에서 자동 무음
+    playAlertSound();
+}
+
 // 콜 알람 시작 (10초마다 반복)
 function startCallAlarm(booking) {
-    stopCallAlarm(); // 기존 타이머 초기화
+    if (!canReceiveAlarm()) return; // 대기중 아니면 알람 안 울림
+    stopCallAlarm();
     const msg = `${booking.name} · ${booking.size} · ${booking.address}`;
-    triggerAlert('🚨 새 콜 접수!', msg);
+    // 첫 알람
+    playAlarmWithVibration();
+    showAlertBanner('🚨 새 콜 접수!', msg);
+
     callAlarmTimer = setInterval(() => {
-        // 아직 접수중인지 확인
+        if (!canReceiveAlarm()) { stopCallAlarm(); return; }
         if (pendingCallKeys.has(booking.id)) {
-            playAlertSound();
-            if (navigator.vibrate) navigator.vibrate([400, 200, 400]);
-            showToast('🚨 미수락 콜 있음! — ' + booking.name);
+            playAlarmWithVibration();
+            showToast('🚨 미수락 콜! — ' + booking.name);
         } else {
             stopCallAlarm();
         }
-    }, 10000); // 10초마다
+    }, 10000);
 }
 
 // 콜 알람 중지
 function stopCallAlarm() {
     if (callAlarmTimer) { clearInterval(callAlarmTimer); callAlarmTimer = null; }
+    dismissAlert();
 }
 
 /* ─── Web Audio 알람 소리 생성 ─── */
@@ -1520,6 +1562,10 @@ window.dismissAlert = function() {
 
 /* ─── 알람 트리거 ─── */
 function triggerAlert(title, body) {
+    // 대기중일 때만 소리/진동 알람
+    if (canReceiveAlarm()) {
+        playAlarmWithVibration();
+    }
     showToast('🔔 ' + title);
     showAlertBanner(title, body);
     // 브라우저 Notification (백그라운드용)
