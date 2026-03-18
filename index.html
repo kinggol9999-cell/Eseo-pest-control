@@ -822,8 +822,18 @@
                 🚨 접수 대기 중인 콜 <span id="pending-count" style="color:#e74c3c;"></span>
             </div>
         </div>
-        <div id="call-list" style="padding:0 12px 80px;">
+        <div id="call-list" style="padding:0 12px 12px;">
             <div class="loading">⏳ 실시간 콜 불러오는 중...</div>
+        </div>
+
+        <!-- 내 수락 기록 -->
+        <div style="padding:4px 12px 4px;margin-top:4px;border-top:1px solid #eee;">
+            <div style="font-size:0.78rem;color:#999;font-weight:bold;letter-spacing:0.5px;padding:8px 0 6px;">
+                📋 내가 수락한 콜 기록 <span id="my-call-count" style="color:#27ae60;"></span>
+            </div>
+        </div>
+        <div id="my-call-list" style="padding:0 12px 100px;">
+            <div style="text-align:center;padding:20px;color:#ccc;font-size:0.82rem;">수락한 콜이 없습니다</div>
         </div>
     </div>
 
@@ -881,9 +891,9 @@ let allBookings = [];
 let bkFilter    = '';
 let unsubBk     = null;
 let unsubWk     = null;
-let unsubCall   = null;  // 실시간 콜 리스너
-let callAlarmTimer = null; // 콜 알람 반복 타이머
-let pendingCallKeys = new Set(); // 현재 대기중 콜 키
+let unsubCall   = null;
+let callAlarmTimer = null;
+let pendingCallKeys = new Set();
 
 /* ═══════════════ 마스터 계정 초기화 ═══════════════ */
 (async () => {
@@ -1196,6 +1206,18 @@ window.startAdminListeners = function() {
             lastBookingCount = allBookings.length;
             renderBookings();
             renderDashboard();
+            // ── 내 수락 기록도 함께 갱신 ──
+            if (currentUser) {
+                const myCalls = allBookings.filter(b =>
+                    b.acceptedBy === currentUser.id ||
+                    b.workerName === currentUser.name ||
+                    b.acceptedBy === currentUser.key
+                );
+                myCalls.sort((a,b) =>
+                    (b.acceptedAt||b.createdAt) - (a.acceptedAt||a.createdAt)
+                );
+                renderMyCallList(myCalls);
+            }
         });
     }
     if (!unsubWk) {
@@ -1386,6 +1408,100 @@ window.renderCallList = function renderCallList(pending) {
     `).join('');
 }
 
+// 내 수락 기록 렌더
+window.renderMyCallList = function renderMyCallList(myCalls) {
+    const listEl  = document.getElementById('my-call-list');
+    const countEl = document.getElementById('my-call-count');
+    if (!listEl) return;
+
+    if (countEl) countEl.textContent = myCalls.length > 0 ? `(총 ${myCalls.length}건)` : '';
+
+    if (!myCalls.length) {
+        listEl.innerHTML = `
+            <div style="text-align:center;padding:30px;color:#ccc;font-size:0.83rem;">
+                <div style="font-size:2rem;margin-bottom:8px;">📋</div>
+                <div>수락한 콜 기록이 없습니다</div>
+            </div>`;
+        return;
+    }
+
+    const statusColor = {
+        '배정완료': '#17a2b8',
+        '출동중':   '#fd7e14',
+        '완료':     '#27ae60',
+        '취소':     '#aaa',
+        '접수중':   '#ffc107',
+    };
+
+    // 통계
+    const done   = myCalls.filter(b => b.status === '완료').length;
+    const active = myCalls.filter(b => b.status === '배정완료' || b.status === '출동중').length;
+
+    listEl.innerHTML = `
+        <!-- 누적 통계 -->
+        <div style="
+            display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;
+            margin-bottom:12px;
+        ">
+            <div style="background:white;border-radius:12px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+                <div style="font-size:1.4rem;font-weight:900;color:#e74c3c;">${myCalls.length}</div>
+                <div style="font-size:0.68rem;color:#999;margin-top:2px;">전체</div>
+            </div>
+            <div style="background:white;border-radius:12px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+                <div style="font-size:1.4rem;font-weight:900;color:#27ae60;">${done}</div>
+                <div style="font-size:0.68rem;color:#999;margin-top:2px;">완료</div>
+            </div>
+            <div style="background:white;border-radius:12px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+                <div style="font-size:1.4rem;font-weight:900;color:#17a2b8;">${active}</div>
+                <div style="font-size:0.68rem;color:#999;margin-top:2px;">진행중</div>
+            </div>
+        </div>
+        <!-- 기록 목록 -->
+        ${myCalls.map(b => {
+            const st    = b.status || '배정완료';
+            const color = statusColor[st] || '#999';
+            const dt    = b.acceptedAt
+                ? new Date(b.acceptedAt).toLocaleString('ko-KR')
+                : (b.dateStr || '');
+            return \`
+            <div style="
+                background:white; border-radius:14px; padding:14px;
+                margin-bottom:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05);
+                border-left:4px solid \${color};
+            ">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <div style="font-weight:900;font-size:0.95rem;color:#111;">\${b.name}</div>
+                    <span style="
+                        background:\${color};color:white;
+                        padding:3px 10px;border-radius:20px;
+                        font-size:0.7rem;font-weight:bold;white-space:nowrap;
+                    ">\${st}</span>
+                </div>
+                <div style="display:grid;grid-template-columns:18px 1fr;gap:4px 8px;font-size:0.83rem;color:#444;margin-bottom:10px;">
+                    <span>📞</span><span><a href="tel:\${b.phone}" style="color:#1971c2;font-weight:bold;">\${b.phone}</a></span>
+                    <span>📍</span><span>\${b.address}</span>
+                    <span>📐</span><span>\${b.size}</span>
+                    \${b.facilityRequest ? '<span>🔧</span><span style="color:#007bff;font-weight:bold;">시설보완 요청</span>' : ''}
+                    \${b.memo ? \`<span>📝</span><span style="color:#666;">\${b.memo}</span>\` : ''}
+                    <span>🕐</span><span style="font-size:0.74rem;color:#bbb;">\${dt}</span>
+                </div>
+                <div style="display:flex;gap:6px;">
+                    \${['출동중','완료','취소'].map(s => \`
+                        <button onclick="changeStatus('\${b.id}','\${s}')" style="
+                            flex:1;padding:8px 4px;border:none;border-radius:8px;
+                            font-size:0.72rem;font-weight:bold;cursor:pointer;
+                            background:\${s==='완료'?'#27ae60':s==='출동중'?'#fd7e14':'#eee'};
+                            color:\${s==='취소'?'#888':'white'};
+                            box-shadow:\${st===s?'inset 0 0 0 2px rgba(0,0,0,0.25)':'none'};
+                            font-weight:\${st===s?'900':'bold'};
+                        ">\${s==='완료'?'✅ 완료':s==='출동중'?'🚗 출동중':'❌ 취소'}</button>
+                    \`).join('')}
+                </div>
+            </div>\`;
+        }).join('')}
+    `;
+};
+
 // 콜 수락
 window.acceptCall = async function(bkId, name, phone) {
     if (!currentUser) return;
@@ -1395,20 +1511,18 @@ window.acceptCall = async function(bkId, name, phone) {
         // ★ update 사용 - 기존 필드 유지하면서 상태만 변경
         await update(ref(db, 'bookings/' + bkId), {
             status: '배정완료',
-            workerName: currentUser.name,
+            workerName: currentUser.name || '',
             workerPhone: currentUser.phone || '',
             acceptedAt: Date.now(),
-            acceptedBy: currentUser.id
+            acceptedBy: currentUser.id || currentUser.key || ''
         });
         await update(ref(db, 'users/' + currentUser.key), { workerStatus: '이동중' });
         currentUser.workerStatus = '이동중';
         renderMyStatusCard('이동중');
         stopCallAlarm();
-        showToast('✅ ' + name + ' 고객 콜 수락 완료!');
-        // 예약관리 탭으로 이동 + 배정완료 필터
-        switchAdminTab('adm-bookings');
-        bkFilter = '배정완료';
-        renderBookings();
+        showToast('✅ ' + name + ' 고객 콜 수락! 기록에 저장됩니다.');
+        // 콜탭에 계속 머물며 내 기록에서 확인
+        // (탭 전환 없이 현재 콜탭 유지)
     } catch(e) {
         showToast('오류: ' + e.message);
     }
