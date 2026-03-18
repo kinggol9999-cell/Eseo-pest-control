@@ -734,7 +734,7 @@
     <div class="admin-login-box">
         <input type="text"     id="login-id" class="form-control" placeholder="아이디" autocomplete="username">
         <input type="password" id="login-pw" class="form-control" placeholder="비밀번호" autocomplete="current-password">
-        <button class="btn-admin-login" onclick="doLogin()">로그인</button>
+        <button class="btn-admin-login" onclick="unlockAudio(); doLogin()">로그인</button>
         <hr style="border-color:rgba(255,255,255,0.1);margin:20px 0;">
         <p style="color:rgba(255,255,255,0.5);font-size:0.8rem;text-align:center;margin-bottom:10px;">작업자 가입 신청</p>
         <button class="btn btn-outline-light w-100" style="border-radius:12px;" onclick="goTo('register')">신규 가입 신청하기</button>
@@ -809,7 +809,7 @@
             <div style="font-size:0.75rem;opacity:0.6;margin-bottom:6px;">내 현재 상태</div>
             <div id="my-status-label" style="font-size:1.1rem;font-weight:900;margin-bottom:12px;">⏳ 로딩중...</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button class="ws-btn" data-st="대기중" onclick="setMyStatus('대기중')" style="background:#27ae60;">🟢 대기중</button>
+                <button class="ws-btn" data-st="대기중" onclick="unlockAudio(); setMyStatus('대기중')" style="background:#27ae60;">🟢 대기중</button>
                 <button class="ws-btn" data-st="이동중" onclick="setMyStatus('이동중')" style="background:#f39c12;">🚗 이동중</button>
                 <button class="ws-btn" data-st="작업중" onclick="setMyStatus('작업중')" style="background:#e74c3c;">🔴 작업중</button>
                 <button class="ws-btn" data-st="퇴근"   onclick="setMyStatus('퇴근')"   style="background:#555;">⚫ 퇴근</button>
@@ -1319,42 +1319,78 @@ function renderCallList(pending) {
     }
     listEl.innerHTML = pending.map(b => `
         <div class="call-card" id="call-${b.id}">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
-                <div>
-                    <div style="font-weight:900;font-size:0.95rem;color:#e74c3c;">🚨 새 콜 접수</div>
-                    <div style="font-size:0.72rem;color:#999;margin-top:2px;">${b.dateStr || ''}</div>
+            <!-- 헤더 -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <div style="font-weight:900;font-size:1rem;color:#e74c3c;">🚨 새 콜 접수!</div>
+                <div style="font-size:0.7rem;color:#999;">${b.dateStr || ''}</div>
+            </div>
+
+            <!-- 고객 전체 정보 -->
+            <div style="background:#f8f9fa;border-radius:12px;padding:12px;margin-bottom:10px;">
+                <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:0.85rem;line-height:1.6;">
+                    <span style="color:#999;white-space:nowrap;">👤 고객명</span>
+                    <span style="font-weight:bold;color:#111;">${b.name}</span>
+
+                    <span style="color:#999;white-space:nowrap;">📞 연락처</span>
+                    <span>
+                        <a href="tel:${b.phone}" style="
+                            font-weight:bold;color:#1971c2;text-decoration:none;
+                            background:#e7f5ff;padding:2px 10px;border-radius:20px;
+                        ">${b.phone} ☎</a>
+                    </span>
+
+                    <span style="color:#999;white-space:nowrap;">📍 주소</span>
+                    <span style="font-weight:bold;color:#333;">${b.address}</span>
+
+                    <span style="color:#999;white-space:nowrap;">📐 평수</span>
+                    <span style="color:#333;">${b.size}</span>
+
+                    ${b.facilityRequest ? `
+                    <span style="color:#999;white-space:nowrap;">🔧 시설보완</span>
+                    <span style="color:#007bff;font-weight:bold;">요청 있음</span>
+                    ` : ''}
+
+                    ${b.memo ? `
+                    <span style="color:#999;white-space:nowrap;">📝 메모</span>
+                    <span style="color:#555;">${b.memo}</span>
+                    ` : ''}
                 </div>
-                <span style="background:#ffeaa7;color:#333;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:bold;">접수중</span>
             </div>
-            <div style="font-size:0.85rem;color:#333;line-height:1.8;">
-                <div>👤 <b>${b.name}</b> · ${b.size}</div>
-                <div>📍 ${b.address}</div>
-                ${b.facilityRequest ? '<div style="color:#007bff;font-weight:bold;">🔧 시설보완 요청</div>' : ''}
-                ${b.memo ? `<div style="color:#888;">📝 ${b.memo}</div>` : ''}
-            </div>
-            <button class="call-accept-btn" onclick="acceptCall('${b.id}','${b.name}')">
-                ✅ 콜 수락하기
+
+            <!-- 수락 버튼 -->
+            <button class="call-accept-btn" onclick="acceptCall('${b.id}','${b.name}','${b.phone}')">
+                ✅ 이 콜 수락하기
             </button>
         </div>
     `).join('');
 }
 
 // 콜 수락
-window.acceptCall = async function(bkId, name) {
+window.acceptCall = async function(bkId, name, phone) {
     if (!currentUser) return;
-    if (!confirm(`${name} 고객의 콜을 수락하시겠습니까?`)) return;
-    await update(ref(db, 'bookings/' + bkId), {
-        status: '배정완료',
-        workerName: currentUser.name,
-        workerPhone: currentUser.phone || '',
-        acceptedAt: Date.now()
-    });
-    await update(ref(db, 'users/' + currentUser.key), { workerStatus: '이동중' });
-    currentUser.workerStatus = '이동중';
-    renderMyStatusCard('이동중');
-    stopCallAlarm();
-    showToast('✅ 콜 수락! 상태가 이동중으로 변경됐습니다.');
-    switchAdminTab('adm-bookings');
+    if (!confirm(`${name} 고객의 콜을 수락하시겠습니까?\n연락처: ${phone}`)) return;
+
+    try {
+        // ★ update 사용 - 기존 필드 유지하면서 상태만 변경
+        await update(ref(db, 'bookings/' + bkId), {
+            status: '배정완료',
+            workerName: currentUser.name,
+            workerPhone: currentUser.phone || '',
+            acceptedAt: Date.now(),
+            acceptedBy: currentUser.id
+        });
+        await update(ref(db, 'users/' + currentUser.key), { workerStatus: '이동중' });
+        currentUser.workerStatus = '이동중';
+        renderMyStatusCard('이동중');
+        stopCallAlarm();
+        showToast('✅ ' + name + ' 고객 콜 수락 완료!');
+        // 예약관리 탭으로 이동 + 배정완료 필터
+        switchAdminTab('adm-bookings');
+        bkFilter = '배정완료';
+        renderBookings();
+    } catch(e) {
+        showToast('오류: ' + e.message);
+    }
 };
 
 // 콜 알람 시작 (10초마다 반복)
@@ -1381,23 +1417,54 @@ function stopCallAlarm() {
 
 /* ─── Web Audio 알람 소리 생성 ─── */
 let alertSoundInterval = null;
+let _audioCtx = null; // 전역 AudioContext (한 번만 생성)
+
+// 사용자 터치 시 AudioContext 미리 활성화
+function unlockAudio() {
+    if (_audioCtx) return;
+    try {
+        _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // 무음 재생으로 잠금 해제
+        const buf = _audioCtx.createBuffer(1, 1, 22050);
+        const src = _audioCtx.createBufferSource();
+        src.buffer = buf;
+        src.connect(_audioCtx.destination);
+        src.start(0);
+        console.log('🔊 오디오 활성화 완료');
+    } catch(e) { console.log('오디오 활성화 실패:', e); }
+}
 
 function playAlertSound() {
     try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        // 3번 반복 비프음
-        [0, 0.35, 0.7].forEach(offset => {
-            const osc = ctx.createOscillator();
+        // AudioContext 없으면 새로 생성
+        if (!_audioCtx) {
+            _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        // suspended 상태면 resume
+        if (_audioCtx.state === 'suspended') {
+            _audioCtx.resume();
+        }
+        const ctx = _audioCtx;
+        // 긴급 알람음: 삐-삐-삐 3회 + 낮은음
+        const pattern = [
+            { freq: 1200, start: 0.0,  dur: 0.15 },
+            { freq: 900,  start: 0.0,  dur: 0.15 },
+            { freq: 1200, start: 0.25, dur: 0.15 },
+            { freq: 900,  start: 0.25, dur: 0.15 },
+            { freq: 1200, start: 0.5,  dur: 0.15 },
+            { freq: 900,  start: 0.5,  dur: 0.15 },
+        ];
+        pattern.forEach(({ freq, start, dur }) => {
+            const osc  = ctx.createOscillator();
             const gain = ctx.createGain();
             osc.connect(gain);
             gain.connect(ctx.destination);
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, ctx.currentTime + offset);
-            osc.frequency.setValueAtTime(660, ctx.currentTime + offset + 0.15);
-            gain.gain.setValueAtTime(0.8, ctx.currentTime + offset);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.28);
-            osc.start(ctx.currentTime + offset);
-            osc.stop(ctx.currentTime + offset + 0.3);
+            osc.type = 'square'; // 더 선명한 소리
+            osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+            gain.gain.setValueAtTime(0.6, ctx.currentTime + start);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+            osc.start(ctx.currentTime + start);
+            osc.stop(ctx.currentTime + start + dur + 0.05);
         });
     } catch(e) { console.log('소리 재생 오류:', e); }
 }
@@ -1485,7 +1552,8 @@ function renderDashboard() {
                     <span class="status-badge badge-${b.status}">${b.status}</span>
                 </div>
                 <div class="booking-info">
-                    <p>📞 ${b.phone}</p>
+                    <p>👤 ${b.name} · ${b.size}</p>
+                    <p>📞 <a href="tel:${b.phone}" style="color:#1971c2;font-weight:bold;">${b.phone}</a></p>
                     <p>📍 ${b.address}</p>
                 </div>
             </div>`).join('')
@@ -1511,7 +1579,8 @@ function renderBookings() {
                 <span class="status-badge badge-${b.status}">${b.status}</span>
             </div>
             <div class="booking-info">
-                <p>📞 ${b.phone}</p>
+                <p>👤 ${b.name} · ${b.size}</p>
+                <p>📞 <a href="tel:${b.phone}" style="color:#1971c2;font-weight:bold;">${b.phone}</a></p>
                 <p>📍 ${b.address}</p>
                 ${b.facilityRequest ? '<p class="text-primary fw-bold">✅ 시설보완 요청</p>' : ''}
                 ${b.memo ? `<p>📝 ${b.memo}</p>` : ''}
@@ -1671,6 +1740,19 @@ window.demoteMem  = async k => { await update(ref(db,'users/'+k),{role:'worker'}
 if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
 }
+
+// 첫 터치 시 오디오 자동 활성화
+document.addEventListener('touchstart', function onFirstTouch() {
+    unlockAudio();
+    document.removeEventListener('touchstart', onFirstTouch);
+}, { once: true });
+
+// 클릭도 동일하게
+document.addEventListener('click', function onFirstClick() {
+    unlockAudio();
+    document.removeEventListener('click', onFirstClick);
+}, { once: true });
+
 goTo('main');
 </script>
 </body>
