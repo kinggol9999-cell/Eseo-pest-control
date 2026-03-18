@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>24시 바퀴벌레 긴급출동</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'Pretendard';
+            src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
+            font-weight: 400;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Pretendard', sans-serif;
+            margin: 0; padding: 0; overflow-x: hidden;
+        }
+
+        /* ── 모든 화면 기본 숨김 ── */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* ── 메인 타이틀 화면 ── */
+        #screen-main {
+            position: relative;
+            background-image: url('배경화면.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            min-height: 100vh;
+            display: none; /* JS가 active 추가하면 flex로 변경 */
+            flex-direction: column;
+            justify-content: flex-end;
+            padding-bottom: 50px;
+        }
+        #screen-main.active {
+            display: flex !important;
+        }
+        #screen-main::before {
+            content: "";
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 1;
+        }
+        .main-menu-container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            padding: 0 20px;
+        }
+        .menu-btn {
+            height: 85px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 1rem;
+            white-space: nowrap; border-radius: 15px;
+            margin-bottom: 12px;
+            background: transparent;
+            border: 2px solid rgba(255,255,255,0.7);
+            color: white !important;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+            transition: all 0.15s;
+            cursor: pointer;
+            user-select: none;
+        }
+        .menu-btn:hover  { background: rgba(255,255,255,0.12); }
+        .menu-btn:active { transform: scale(0.97); background: rgba(255,255,255,0.22); }
+        .menu-btn-admin {
+            background: rgba(231,76,60,0.18) !important;
+            border-color: rgba(231,76,60,0.6) !important;
+        }
+
+        /* ── 섹션 공통 ── */
+        .section-page {
+            display: none;
+            padding: 25px 20px 30px;
+            background: white;
+            min-height: 100vh;
+        }
+        .section-page.active { display: block; }
+
+        h3 {
+            font-weight: bold; margin-bottom: 25px; color: #111;
+            border-left: 5px solid #222; padding-left: 10px;
+            font-size: 1.1rem;
+        }
+
+        /* ── 공통 박스 ── */
+        .option-box {
+            background: #f8f9fa; padding: 15px; border-radius: 12px;
+            border: 1px dashed #ccc; margin-bottom: 20px;
+        }
+        .price-table {
+            width: 100%; border-radius: 10px; overflow: hidden;
+            font-size: 0.85rem; border: 1px solid #eee; margin-bottom: 20px;
+        }
+        .price-table th, .price-table td {
+            padding: 12px 6px; border-bottom: 1px solid #eee; text-align: center;
+        }
+        .price-table th { background-color: #f8f9fa; color: #666; font-size: 0.75rem; }
+        .price-table td.price-bold { font-weight: bold; color: #000; }
+        .price-table td.price-red  { font-weight: bold; color: #d63031; }
+
+        .notice-card {
+            background: #fff5f5; border: 1px solid #ffa8a8;
+            border-radius: 12px; padding: 15px; margin-bottom: 20px;
+        }
+        .notice-card h6 { color: #e03131; font-weight: bold; font-size: 0.95rem; margin-bottom: 10px; }
+        .notice-card p  { font-size: 0.85rem; color: #333; line-height: 1.7; margin-bottom: 0; }
+
+        .deposit-info {
+            background: #fff9db; border: 1px solid #fab005;
+            border-radius: 10px; padding: 12px; margin-bottom: 20px; font-size: 0.85rem;
+        }
+        .refund-banner {
+            background: #e7f5ff; border: 1px solid #74c0fc;
+            color: #1971c2; border-radius: 12px; padding: 15px;
+            margin-bottom: 25px; font-weight: bold; font-size: 0.88rem;
+        }
+
+        .btn-back-group { margin-top: 30px; }
+        .btn-back { border-radius: 12px; padding: 15px; font-weight: bold; cursor: pointer; }
+
+        /* ── 작업자 카드 ── */
+        .call-btn {
+            background: #212529; color: white !important;
+            border-radius: 10px; padding: 8px 12px;
+            font-size: 0.8rem; font-weight: bold;
+            text-decoration: none; display: inline-block;
+        }
+        .status-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            display: inline-block; margin-right: 4px;
+        }
+        .dot-ready { background: #2ecc71; box-shadow: 0 0 6px #2ecc71; animation: blink 1.5s infinite; }
+        .dot-busy  { background: #e74c3c; }
+        @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+        /* ── 예약 현황 카드 ── */
+        .booking-card-item {
+            border: 1px solid #eee; border-radius: 16px;
+            padding: 16px; margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .badge-접수중  { background:#ffc107; color:#333; }
+        .badge-배정완료{ background:#17a2b8; color:white; }
+        .badge-출동중  { background:#fd7e14; color:white; }
+        .badge-완료    { background:#28a745; color:white; }
+        .badge-취소    { background:#6c757d; color:white; }
+
+        /* ── 관리자 로그인 화면 ── */
+        #screen-admin-gate {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 24px;
+        }
+        #screen-admin-gate.active { display: flex !important; }
+        #screen-admin-gate h2  { color: white; font-weight: 900; font-size: 1.4rem; margin-bottom: 6px; }
+        #screen-admin-gate > p { color: rgba(255,255,255,0.5); font-size: 0.82rem; margin-bottom: 30px; }
+
+        .admin-login-box {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 20px; padding: 28px 24px; width: 100%;
+        }
+        .admin-login-box .form-control {
+            background: rgba(255,255,255,0.09);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white; border-radius: 12px; padding: 14px;
+            margin-bottom: 14px;
+        }
+        .admin-login-box .form-control::placeholder { color: rgba(255,255,255,0.4); }
+        .admin-login-box .form-control:focus {
+            background: rgba(255,255,255,0.13);
+            border-color: #e74c3c; box-shadow: none; color: white;
+        }
+        .btn-admin-login {
+            background: #e74c3c; color: white; border: none;
+            border-radius: 12px; padding: 15px; width: 100%;
+            font-weight: bold; font-size: 1rem; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-admin-login:hover { background: #c0392b; }
+
+        /* ── 가입 신청 화면 ── */
+        #screen-register {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 24px;
+        }
+        #screen-register.active { display: flex !important; }
+        #screen-register h2  { color: white; font-weight: 900; font-size: 1.4rem; margin-bottom: 6px; }
+        #screen-register > p { color: rgba(255,255,255,0.5); font-size: 0.82rem; margin-bottom: 30px; }
+
+        /* ── 관리자 패널 ── */
+        #screen-admin-panel { display: none; min-height: 100vh; background: #f4f4f4; }
+        #screen-admin-panel.active { display: block !important; }
+
+        .admin-tab-nav {
+            display: flex; background: white;
+            border-bottom: 1px solid #eee;
+            position: sticky; top: 0; z-index: 100;
+            overflow-x: auto; -webkit-overflow-scrolling: touch;
+        }
+        .admin-tab {
+            flex: 1; min-width: 70px; text-align: center;
+            padding: 14px 6px; font-size: 0.72rem; color: #999;
+            cursor: pointer; white-space: nowrap;
+            border-bottom: 2px solid transparent; transition: all 0.2s;
+        }
+        .admin-tab.active { color: #e74c3c; border-bottom-color: #e74c3c; font-weight: bold; }
+
+        .admin-tab-content { display: none; padding: 16px; }
+        .admin-tab-content.active { display: block; }
+
+        /* ── 대시보드 통계 ── */
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .stat-card {
+            background: white; border-radius: 14px; padding: 16px;
+            text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .stat-num   { font-size: 2rem; font-weight: 900; color: #e74c3c; }
+        .stat-label { font-size: 0.72rem; color: #999; margin-top: 4px; }
+
+        /* ── 예약 아이템 ── */
+        .booking-item {
+            background: white; border-radius: 14px;
+            padding: 14px; margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .booking-top {
+            display: flex; justify-content: space-between;
+            align-items: flex-start; margin-bottom: 8px;
+        }
+        .booking-info p { margin: 0; font-size: 0.82rem; color: #555; line-height: 1.75; }
+        .status-badge {
+            display: inline-block; padding: 4px 10px; border-radius: 20px;
+            font-size: 0.7rem; font-weight: bold; white-space: nowrap;
+        }
+        .status-btn {
+            font-size: 0.7rem; padding: 5px 9px; border-radius: 8px;
+            border: 1px solid #ddd; background: white; cursor: pointer;
+            margin: 2px; transition: all 0.15s;
+        }
+        .status-btn.on { background: #e74c3c; color: white; border-color: #e74c3c; }
+
+        /* ── 작업자 관리 카드 ── */
+        .worker-manage-card {
+            background: white; border-radius: 14px; padding: 14px;
+            margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .toggle-btn {
+            padding: 7px 14px; border-radius: 20px; border: none;
+            font-size: 0.75rem; font-weight: bold; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .toggle-ready { background: #d4edda; color: #155724; }
+        .toggle-busy  { background: #f8d7da; color: #721c24; }
+
+        /* ── 회원 관리 카드 ── */
+        .member-card {
+            background: white; border-radius: 14px; padding: 14px;
+            margin-bottom: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .member-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+        .mbtn {
+            flex: 1; min-width: 70px; padding: 8px 6px; border-radius: 8px;
+            border: none; font-size: 0.72rem; font-weight: bold; cursor: pointer;
+        }
+        .mbtn-approve { background: #28a745; color: white; }
+        .mbtn-reject  { background: #e74c3c; color: white; }
+        .mbtn-promote { background: #007bff; color: white; }
+        .mbtn-demote  { background: #6c757d; color: white; }
+
+        /* ── 공개 작업자 현황 ── */
+        .worker-public {
+            border: 1px solid #eee; border-radius: 14px; padding: 14px;
+            margin-bottom: 10px; display: flex;
+            align-items: center; justify-content: space-between;
+            background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+
+        /* ── 토스트 ── */
+        .toast-bar {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: #333; color: white; padding: 11px 22px;
+            border-radius: 30px; font-size: 0.83rem;
+            z-index: 9999; opacity: 0; transition: opacity 0.3s;
+            white-space: nowrap; pointer-events: none;
+        }
+        .toast-bar.show { opacity: 1; }
+
+        /* ── 로딩 ── */
+        .loading { text-align: center; padding: 40px; color: #bbb; font-size: 0.9rem; }
+
+        /* ── 빈 상태 ── */
+        .empty { text-align: center; padding: 50px 20px; color: #ccc; }
+        .empty .ei { font-size: 2.8rem; margin-bottom: 8px; }
+        .empty p   { font-size: 0.85rem; }
+
+        /* 폼 */
+        .form-control, .form-select { border-radius: 12px !important; }
+        .form-control:focus, .form-select:focus { box-shadow: 0 0 0 2px rgba(34,34,34,0.15) !important; border-color: #333 !important; }
+
+        /* 섹션 제목 구분선 */
+        .sec-head { border-left: 5px solid #222; padding-left: 10px; font-size: 1rem; margin-bottom: 14px; }
+    </style>
+</head>
+<body>
+
+<!-- 토스트 -->
+<div class="toast-bar" id="toast"></div>
+
+<!-- ════════════════════════════════
+     메인 화면
+════════════════════════════════ -->
+<div id="screen-main" class="screen">
+    <div style="
+        position:relative;
+        background-image:url('배경화면.png');
+        background-size:cover; background-position:center; background-repeat:no-repeat;
+        min-height:100vh; display:flex; align-items:flex-end; padding-bottom:50px;
+    ">
+        <div style="
+            content:''; position:absolute; top:0; left:0; right:0; bottom:0;
+            background:rgba(0,0,0,0.4); z-index:1;
+        "></div>
+        <div class="container main-menu-container" style="position:relative;z-index:2;width:100%;padding:0 20px;">
+            <div class="row gx-2">
+                <div class="col-6">
+                    <div class="btn menu-btn w-100" onclick="goTo('booking')">📅 예약하기</div>
+                </div>
+                <div class="col-6">
+                    <div class="btn menu-btn w-100" onclick="goTo('price')">💰 가격안내</div>
+                </div>
+                <div class="col-6">
+                    <div class="btn menu-btn w-100" onclick="goTo('my-booking')">📋 내 예약정보</div>
+                </div>
+                <div class="col-6">
+                    <div class="btn menu-btn w-100" onclick="goTo('about')">📢 서비스소개</div>
+                </div>
+                <div class="col-12">
+                    <div class="btn menu-btn menu-btn-admin w-100" onclick="goTo('admin-gate')">🔐 관리자 / 작업자 로그인</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════
+     예약하기
+════════════════════════════════ -->
+<div id="screen-booking" class="screen section-page">
+    <h3>📅 출동 예약</h3>
+
+    <div class="mb-3">
+        <label class="form-label small text-muted">이름 *</label>
+        <input type="text" id="bk-name" class="form-control form-control-lg" placeholder="홍길동">
+    </div>
+    <div class="mb-3">
+        <label class="form-label small text-muted">연락처 *</label>
+        <input type="tel" id="bk-phone" class="form-control form-control-lg" placeholder="010-0000-0000">
+    </div>
+    <div class="mb-3">
+        <label class="form-label small text-muted">출동 주소지 *</label>
+        <input type="text" id="bk-address" class="form-control form-control-lg" placeholder="상세 주소를 입력하세요">
+    </div>
+    <div class="mb-3">
+        <label class="form-label small text-muted">평수 선택</label>
+        <select id="bk-size" class="form-select form-select-lg">
+            <option value="원룸 (10평 이하)">원룸 (10평 이하)</option>
+            <option value="투룸 (20평 이하)">투룸 (20평 이하)</option>
+            <option value="쓰리룸 (30평 이하)">쓰리룸 (30평 이하)</option>
+            <option value="40평대 (50평 이하)">40평대 (50평 이하)</option>
+        </select>
+    </div>
+
+    <div class="mb-4">
+        <label class="form-label small text-muted">시설보완 작업 요청 (옵션)</label>
+        <div class="option-box">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="bk-facility">
+                <label class="form-check-label" for="bk-facility">
+                    <b>시설보완 신청 (전문 보완 시 추가비 발생)</b><br>
+                    <span class="text-muted small">
+                        * 테이핑 등 간단한 보완은 <b>무료</b>로 해드립니다.<br>
+                        * 실리콘, 문풍지, 배수구 트랩 등 자재가 들어가는 광범위한 작업 시
+                        시설보완비(1~3만원 추가)가 들어갈 수 있습니다.
+                    </span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label small text-muted">요청사항 (선택)</label>
+        <textarea id="bk-memo" class="form-control" rows="3" placeholder="추가 요청사항을 입력해 주세요"></textarea>
+    </div>
+
+    <div class="deposit-info text-center">
+        ⚠️ <b>노쇼방지 선납금 안내</b><br>
+        오후 10시 이전: 2만원 / 오후 10시 이후: 3만원
+    </div>
+
+    <div class="btn-back-group">
+        <button class="btn btn-dark w-100 btn-back mb-2" onclick="submitBooking()">예약 신청하기</button>
+        <button class="btn btn-light w-100 btn-back" onclick="goTo('main')">뒤로가기</button>
+    </div>
+</div>
+
+<!-- ════════════════════════════════
+     가격 안내
+════════════════════════════════ -->
+<div id="screen-price" class="screen section-page">
+    <h3>💰 서비스 가격표</h3>
+
+    <div class="deposit-info text-center">
+        ⚠️ <b>노쇼방지 선납금 안내</b><br>
+        오후 10시 이전: 2만원 / 오후 10시 이후: 3만원
+    </div>
+
+    <table class="price-table">
+        <thead>
+            <tr><th>구분 (평수)</th><th>오후 10시 이전</th><th>오후 10시 이후</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>10평 이하</td><td class="price-bold">80,000원</td><td class="price-red">120,000원</td></tr>
+            <tr><td>20평 이하</td><td class="price-bold">90,000원</td><td class="price-red">140,000원</td></tr>
+            <tr><td>30평 이하</td><td class="price-bold">110,000원</td><td class="price-red">160,000원</td></tr>
+            <tr><td>50평 이하</td><td class="price-bold">150,000원</td><td class="price-red">200,000원</td></tr>
+        </tbody>
+    </table>
+
+    <div class="notice-card">
+        <h6>📢 방역 전 필수 안내사항</h6>
+        <p>
+            • 바퀴벌레는 어디든 들어갈 수 있기 때문에 시야에 없는 경우 못 잡을 수도 있고
+            잡더라도 추가 개체가 추후에 발견될 수도 있습니다.<br><br>
+            • <b>작업을 받는다고 한 마리도 안 보인다는 의미는 아니며, 유입 경로 차단, 전용약제작업 등으로
+            최대한 덜 보이고 내부 서식을 못 하게 막는 작업이라고 이해하셔야 합니다.</b><br><br>
+            • 보통 1회 작업으로 개선이 되는 경우도 있지만 생각보다 개체가 너무 많거나
+            건물 문제가 심각한 경우 추가 작업이 필요할 수도 있습니다.
+        </p>
+    </div>
+
+    <div class="option-box">
+        <span class="small">
+            <b>💡 시설보완비 안내:</b> 간단한 테이핑은 무료이나 광범위한 실리콘, 문풍지, 배수구 트랩 등
+            자재가 들어가는 작업 시 시설보완비(1~3만원 추가)가 들어갈 수 있음을 안내드립니다.
+        </span>
+    </div>
+
+    <div class="btn-back-group">
+        <button class="btn btn-light w-100 btn-back" onclick="goTo('main')">뒤로가기</button>
+    </div>
+</div>
+
+<!-- ════════════════════════════════
+     내 예약 조회
+════════════════════════════════ -->
+<div id="screen-my-booking" class="screen section-page">
+    <h3>📋 내 예약 현황</h3>
+
+    <div class="mb-3 d-flex gap-2">
+        <input type="tel" id="search-phone" class="form-control form-control-lg" placeholder="예약 시 입력한 연락처">
+        <button class="btn btn-dark px-4" style="border-radius:12px;white-space:nowrap;" onclick="loadMyBookings()">조회</button>
+    </div>
+
+    <div id="my-booking-list">
+        <div id="no-data" class="text-center py-5 border rounded bg-light">
+            <p class="text-muted mb-0">연락처를 입력하고 조회 버튼을 눌러주세요.</p>
+        </div>
+    </div>
+
+    <div class="btn-back-group">
+        <button class="btn btn-light w-100 btn-back" onclick="goTo('main')">뒤로가기</button>
+    </div>
+</div>
+
+<!-- ════════════════════════════════
+     서비스 소개
+════════════════════════════════ -->
+<div id="screen-about" class="screen section-page">
+    <h3>📢 서비스 소개</h3>
+
+    <div class="refund-banner text-center">
+        🛡️ [본사 보장제 정책]<br>
+        서비스 제공 시 불친절하거나 납득하지 못할 서비스 제공 시
+        저희 본사에서 일부 금액 또는 전액을 환불해 드립니다.
+    </div>
+
+    <h5 class="fw-bold mb-3" style="font-size:1rem;">⚡ 실시간 출동대기 명단</h5>
+    <div id="public-worker-list">
+        <div class="loading">⏳ 대기 현황 불러오는 중...</div>
+    </div>
+
+    <div class="p-4 bg-dark text-white rounded-4 mb-3 mt-3">
+        <h6 class="fw-bold mb-2">🏠 이서아빠의 약속</h6>
+        <p class="small mb-0 lh-lg opacity-75">
+            내 가족이 사는 공간이라는 생각으로 빈틈없이 시공합니다.<br>
+            24시간 언제든 믿고 맡겨주세요.
+        </p>
+    </div>
+
+    <div class="btn-back-group">
+        <button class="btn btn-light w-100 btn-back" onclick="goTo('main')">뒤로가기</button>
+    </div>
+</div>
+
+<!-- ════════════════════════════════
+     관리자 로그인
+════════════════════════════════ -->
+<div id="screen-admin-gate" class="screen" style="
+    background:#1a1a2e; min-height:100vh;
+    display:none; flex-direction:column; align-items:center; justify-content:center; padding:30px 24px;
+">
+    <h2 style="color:white;font-weight:900;font-size:1.4rem;margin-bottom:6px;">🔐 로그인</h2>
+    <p style="color:rgba(255,255,255,0.5);font-size:0.82rem;margin-bottom:30px;">관리자 또는 작업자 계정으로 로그인하세요</p>
+    <div class="admin-login-box">
+        <input type="text"     id="login-id" class="form-control" placeholder="아이디" autocomplete="username">
+        <input type="password" id="login-pw" class="form-control" placeholder="비밀번호" autocomplete="current-password">
+        <button class="btn-admin-login" onclick="doLogin()">로그인</button>
+        <hr style="border-color:rgba(255,255,255,0.1);margin:20px 0;">
+        <p style="color:rgba(255,255,255,0.5);font-size:0.8rem;text-align:center;margin-bottom:10px;">작업자 가입 신청</p>
+        <button class="btn btn-outline-light w-100" style="border-radius:12px;" onclick="goTo('register')">신규 가입 신청하기</button>
+    </div>
+    <button class="btn btn-link text-secondary mt-3" style="font-size:0.85rem;" onclick="goTo('main')">← 메인으로</button>
+</div>
+
+<!-- ════════════════════════════════
+     가입 신청
+════════════════════════════════ -->
+<div id="screen-register" class="screen" style="
+    background:#1a1a2e; min-height:100vh;
+    display:none; flex-direction:column; align-items:center; justify-content:center; padding:30px 24px;
+">
+    <h2 style="color:white;font-weight:900;font-size:1.4rem;margin-bottom:6px;">📝 가입 신청</h2>
+    <p style="color:rgba(255,255,255,0.5);font-size:0.82rem;margin-bottom:30px;">관리자 승인 후 로그인 가능합니다</p>
+    <div class="admin-login-box">
+        <input type="text"     id="reg-name"  class="form-control" placeholder="이름 (실명)">
+        <input type="text"     id="reg-id"    class="form-control" placeholder="사용할 아이디">
+        <input type="password" id="reg-pw"    class="form-control" placeholder="비밀번호">
+        <input type="tel"      id="reg-phone" class="form-control" placeholder="연락처 (010-0000-0000)">
+        <input type="text"     id="reg-area"  class="form-control" placeholder="담당 지역 (예: 강남구, 서초구)">
+        <button class="btn-admin-login" onclick="submitRegister()">가입 신청하기</button>
+    </div>
+    <button class="btn btn-link text-secondary mt-3" style="font-size:0.85rem;" onclick="goTo('admin-gate')">← 로그인으로</button>
+</div>
+
+<!-- ════════════════════════════════
+     관리자 패널
+════════════════════════════════ -->
+<div id="screen-admin-panel" class="screen" style="background:#f4f4f4;min-height:100vh;">
+
+    <!-- 탭 네비 -->
+    <div class="admin-tab-nav">
+        <div class="admin-tab active" data-tab="adm-dashboard" onclick="switchAdminTab('adm-dashboard')">📊 대시보드</div>
+        <div class="admin-tab"        data-tab="adm-bookings"  onclick="switchAdminTab('adm-bookings')">📋 예약관리</div>
+        <div class="admin-tab"        data-tab="adm-workers"   onclick="switchAdminTab('adm-workers')">👷 작업자</div>
+        <div class="admin-tab master-tab" data-tab="adm-members" onclick="switchAdminTab('adm-members')" style="display:none;">👥 회원관리</div>
+    </div>
+
+    <!-- 대시보드 -->
+    <div id="adm-dashboard" class="admin-tab-content active">
+        <div class="stat-grid">
+            <div class="stat-card"><div class="stat-num" id="stat-today">-</div><div class="stat-label">오늘 예약</div></div>
+            <div class="stat-card"><div class="stat-num" id="stat-pending">-</div><div class="stat-label">접수 대기</div></div>
+            <div class="stat-card"><div class="stat-num" id="stat-ready">-</div><div class="stat-label">출동 가능</div></div>
+            <div class="stat-card"><div class="stat-num" id="stat-total">-</div><div class="stat-label">전체 예약</div></div>
+        </div>
+        <div class="sec-head fw-bold">🔔 최근 예약 5건</div>
+        <div id="dash-recent"></div>
+        <hr>
+        <button class="btn btn-outline-danger w-100" style="border-radius:12px;padding:14px;font-weight:bold;" onclick="doLogout()">로그아웃</button>
+    </div>
+
+    <!-- 예약 관리 -->
+    <div id="adm-bookings" class="admin-tab-content">
+        <div class="d-flex gap-2 mb-3 overflow-auto pb-1" style="-webkit-overflow-scrolling:touch;">
+            <button class="btn btn-sm btn-dark" style="border-radius:20px;white-space:nowrap;" onclick="filterBk('')">전체</button>
+            <button class="btn btn-sm btn-outline-warning" style="border-radius:20px;white-space:nowrap;" onclick="filterBk('접수중')">접수중</button>
+            <button class="btn btn-sm btn-outline-info" style="border-radius:20px;white-space:nowrap;" onclick="filterBk('배정완료')">배정완료</button>
+            <button class="btn btn-sm btn-outline-secondary" style="border-radius:20px;white-space:nowrap;" onclick="filterBk('출동중')">출동중</button>
+            <button class="btn btn-sm btn-outline-success" style="border-radius:20px;white-space:nowrap;" onclick="filterBk('완료')">완료</button>
+        </div>
+        <div id="bk-list"><div class="loading">⏳ 불러오는 중...</div></div>
+    </div>
+
+    <!-- 작업자 현황 -->
+    <div id="adm-workers" class="admin-tab-content">
+        <div id="wk-list"><div class="loading">⏳ 불러오는 중...</div></div>
+    </div>
+
+    <!-- 회원 관리 (마스터) -->
+    <div id="adm-members" class="admin-tab-content">
+        <div class="sec-head fw-bold mb-3">⏳ 승인 대기</div>
+        <div id="mem-pending"></div>
+        <hr style="margin:20px 0;">
+        <div class="sec-head fw-bold mb-3">✅ 승인된 회원</div>
+        <div id="mem-approved"></div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════
+     Firebase + 앱 로직
+════════════════════════════════ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, set, push, get, update, onValue }
+    from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+/* ── Firebase 초기화 ── */
+const app = initializeApp({
+    apiKey: "AIzaSyAHU0tia2PKucx8rhXZ6D6R8OtLf5bMLEk",
+    authDomain: "cockroach-a8822.firebaseapp.com",
+    databaseURL: "https://cockroach-a8822-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "cockroach-a8822",
+    storageBucket: "cockroach-a8822.firebasestorage.app",
+    messagingSenderId: "811643267338",
+    appId: "1:811643267338:web:bc72a1103574eb6462f2f3",
+    measurementId: "G-9WX5LW5JZX"
+});
+const db = getDatabase(app);
+
+/* ── 전역 상태 ── */
+let currentUser = null;
+let allBookings = [];
+let bkFilter    = '';
+let unsubBk     = null; // 리스너 해제용
+let unsubWk     = null;
+
+/* ═══════════════ 마스터 계정 초기화 ═══════════════ */
+(async () => {
+    const snap = await get(ref(db, 'users/master'));
+    if (!snap.exists()) {
+        await set(ref(db, 'users/master'), {
+            id: 'master', name: '마스터관리자',
+            password: 'master1234',          // ← 운영 전 반드시 변경!
+            role: 'master', status: 'approved',
+            phone: '', area: '전지역',
+            workerStatus: '대기중',
+            createdAt: Date.now()
+        });
+    }
+})();
+
+/* ═══════════════ 화면 전환 ═══════════════ */
+const SCREEN_MAP = {
+    'main'         : 'screen-main',
+    'booking'      : 'screen-booking',
+    'price'        : 'screen-price',
+    'my-booking'   : 'screen-my-booking',
+    'about'        : 'screen-about',
+    'admin-gate'   : 'screen-admin-gate',
+    'register'     : 'screen-register',
+    'admin-panel'  : 'screen-admin-panel',
+};
+
+window.goTo = function(key) {
+    // 관리자 패널 진입 시 로그인 체크
+    if (key === 'admin-panel' && !currentUser) { goTo('admin-gate'); return; }
+
+    // 모든 screen 숨김
+    document.querySelectorAll('[id^="screen-"]').forEach(el => {
+        el.classList.remove('active');
+        el.style.display = 'none';
+    });
+
+    const id = SCREEN_MAP[key] || ('screen-' + key);
+    const el = document.getElementById(id);
+    if (!el) { console.warn('화면 없음:', id); return; }
+
+    // flex가 필요한 화면들
+    const flexScreens = ['screen-main','screen-admin-gate','screen-register'];
+    el.style.display = flexScreens.includes(id) ? 'flex' : 'block';
+    el.classList.add('active');
+    window.scrollTo(0, 0);
+
+    // 서비스소개 → 작업자 실시간 로드
+    if (key === 'about') loadPublicWorkers();
+    // 관리자 패널 → 리스너 시작
+    if (key === 'admin-panel') startAdminListeners();
+};
+
+/* ═══════════════ 토스트 ═══════════════ */
+window.showToast = function(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2600);
+};
+
+/* ═══════════════ 예약 신청 ═══════════════ */
+window.submitBooking = async function() {
+    const name     = document.getElementById('bk-name').value.trim();
+    const phone    = document.getElementById('bk-phone').value.trim();
+    const address  = document.getElementById('bk-address').value.trim();
+    const size     = document.getElementById('bk-size').value;
+    const facility = document.getElementById('bk-facility').checked;
+    const memo     = document.getElementById('bk-memo').value.trim();
+
+    if (!name)    return showToast('이름을 입력해 주세요.');
+    if (!phone)   return showToast('연락처를 입력해 주세요.');
+    if (!address) return showToast('주소를 입력해 주세요.');
+
+    try {
+        const now = new Date();
+        await push(ref(db, 'bookings'), {
+            name, phone, address, size,
+            facilityRequest: facility,
+            memo,
+            status: '접수중',
+            createdAt: Date.now(),
+            dateStr: now.toLocaleString('ko-KR')
+        });
+        showToast('✅ 예약이 접수되었습니다!');
+        ['bk-name','bk-phone','bk-address','bk-memo'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('bk-facility').checked = false;
+        // 내 예약 화면으로 이동해 바로 조회
+        goTo('my-booking');
+        document.getElementById('search-phone').value = phone;
+        setTimeout(loadMyBookings, 400);
+    } catch(e) {
+        showToast('오류: ' + e.message);
+    }
+};
+
+/* ═══════════════ 내 예약 조회 ═══════════════ */
+window.loadMyBookings = async function() {
+    const phone = document.getElementById('search-phone').value.trim();
+    if (!phone) return showToast('연락처를 입력하세요.');
+    const listEl = document.getElementById('my-booking-list');
+    listEl.innerHTML = '<div class="loading">⏳ 조회 중...</div>';
+
+    const snap = await get(ref(db, 'bookings'));
+    const results = [];
+    if (snap.exists()) {
+        snap.forEach(child => {
+            const d = child.val();
+            if (d.phone === phone) results.push({ id: child.key, ...d });
+        });
+    }
+    results.sort((a,b) => b.createdAt - a.createdAt);
+
+    if (!results.length) {
+        listEl.innerHTML = '<div class="empty"><div class="ei">📭</div><p>해당 연락처로 예약된 내역이 없습니다</p></div>';
+        return;
+    }
+    listEl.innerHTML = results.map(b => `
+        <div class="booking-card-item">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <strong>${b.name}</strong>
+                    <span class="text-muted small ms-1">· ${b.size}</span>
+                </div>
+                <span class="status-badge badge-${b.status}">${b.status}</span>
+            </div>
+            <p class="small text-secondary mb-1">📍 ${b.address}</p>
+            ${b.facilityRequest ? '<p class="small text-primary fw-bold mb-1">✅ 시설보완 작업 요청됨</p>' : ''}
+            ${b.memo ? `<p class="small text-muted mb-1">📝 ${b.memo}</p>` : ''}
+            <p class="small text-muted mb-0" style="font-size:0.72rem;">${b.dateStr || ''}</p>
+            ${b.workerName ? `<p class="small mb-0 mt-1">👷 담당 작업자: <b>${b.workerName}</b></p>` : ''}
+        </div>
+    `).join('');
+};
+
+/* ═══════════════ 공개 작업자 현황 ═══════════════ */
+window.loadPublicWorkers = function() {
+    const listEl = document.getElementById('public-worker-list');
+    onValue(ref(db, 'users'), snap => {
+        const workers = [];
+        if (snap.exists()) {
+            snap.forEach(child => {
+                const d = child.val();
+                if ((d.role === 'worker' || d.role === 'admin' || d.role === 'master') && d.status === 'approved')
+                    workers.push(d);
+            });
+        }
+        if (!workers.length) {
+            listEl.innerHTML = '<div class="empty"><p>현재 등록된 작업자가 없습니다</p></div>';
+            return;
+        }
+        listEl.innerHTML = workers.map(w => `
+            <div class="worker-public">
+                <div>
+                    <div class="fw-bold" style="font-size:0.9rem;">
+                        <span class="status-dot ${w.workerStatus === '대기중' ? 'dot-ready' : 'dot-busy'}"></span>
+                        ${w.name} ${w.role === 'master' ? '(본점 대표)' : ''}
+                    </div>
+                    <div class="small fw-bold ${w.workerStatus === '대기중' ? 'text-success' : 'text-danger'}">
+                        ${w.workerStatus || '대기중'} / ${w.area || '전지역'} 긴급출동
+                    </div>
+                </div>
+                ${w.phone ? `<a href="tel:${w.phone}" class="call-btn">📞 전화하기</a>` : ''}
+            </div>
+        `).join('');
+    });
+};
+
+/* ═══════════════ 로그인 ═══════════════ */
+window.doLogin = async function() {
+    const id = document.getElementById('login-id').value.trim();
+    const pw = document.getElementById('login-pw').value.trim();
+    if (!id || !pw) return showToast('아이디와 비밀번호를 입력하세요.');
+
+    const snap = await get(ref(db, 'users'));
+    if (!snap.exists()) return showToast('등록된 계정이 없습니다.');
+
+    let found = null;
+    snap.forEach(child => {
+        const d = child.val();
+        if (d.id === id && d.password === pw) found = { key: child.key, ...d };
+    });
+
+    if (!found)                    return showToast('아이디 또는 비밀번호가 틀렸습니다.');
+    if (found.status === 'pending') return showToast('승인 대기 중입니다. 관리자 승인 후 이용 가능합니다.');
+    if (found.status === 'rejected')return showToast('사용이 제한된 계정입니다.');
+
+    currentUser = found;
+    // 마스터 탭 표시
+    document.querySelectorAll('.master-tab').forEach(el => {
+        el.style.display = (found.role === 'master') ? 'block' : 'none';
+    });
+    showToast(`환영합니다, ${found.name}님!`);
+    goTo('admin-panel');
+    switchAdminTab('adm-dashboard');
+};
+
+/* ═══════════════ 로그아웃 ═══════════════ */
+window.doLogout = function() {
+    currentUser = null;
+    if (unsubBk) { unsubBk(); unsubBk = null; }
+    if (unsubWk) { unsubWk(); unsubWk = null; }
+    goTo('main');
+    showToast('로그아웃 되었습니다.');
+};
+
+/* ═══════════════ 가입 신청 ═══════════════ */
+window.submitRegister = async function() {
+    const name  = document.getElementById('reg-name').value.trim();
+    const id    = document.getElementById('reg-id').value.trim();
+    const pw    = document.getElementById('reg-pw').value.trim();
+    const phone = document.getElementById('reg-phone').value.trim();
+    const area  = document.getElementById('reg-area').value.trim();
+
+    if (!name || !id || !pw || !phone) return showToast('모든 필수 항목을 입력하세요.');
+
+    // 중복 아이디 확인
+    const snap = await get(ref(db, 'users'));
+    if (snap.exists()) {
+        let dup = false;
+        snap.forEach(c => { if (c.val().id === id) dup = true; });
+        if (dup) return showToast('이미 사용 중인 아이디입니다.');
+    }
+
+    await push(ref(db, 'users'), {
+        id, name, password: pw, phone, area,
+        role: 'worker', status: 'pending',
+        workerStatus: '대기중', createdAt: Date.now()
+    });
+    showToast('✅ 가입 신청 완료! 관리자 승인을 기다려주세요.');
+    ['reg-name','reg-id','reg-pw','reg-phone','reg-area'].forEach(i => document.getElementById(i).value = '');
+    goTo('admin-gate');
+};
+
+/* ═══════════════ 관리자 탭 전환 ═══════════════ */
+window.switchAdminTab = function(tabId) {
+    document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.admin-tab').forEach(el => el.classList.remove('active'));
+    const content = document.getElementById(tabId);
+    if (content) content.classList.add('active');
+    const tab = document.querySelector(`[data-tab="${tabId}"]`);
+    if (tab) tab.classList.add('active');
+};
+
+/* ═══════════════ 관리자 리스너 ═══════════════ */
+window.startAdminListeners = function() {
+    // 이미 구독 중이면 재구독 안 함
+    if (!unsubBk) {
+        unsubBk = onValue(ref(db, 'bookings'), snap => {
+            allBookings = [];
+            if (snap.exists()) snap.forEach(c => allBookings.push({ id: c.key, ...c.val() }));
+            allBookings.sort((a,b) => b.createdAt - a.createdAt);
+            renderBookings();
+            renderDashboard();
+        });
+    }
+    if (!unsubWk) {
+        unsubWk = onValue(ref(db, 'users'), snap => {
+            renderWorkers(snap);
+            if (currentUser?.role === 'master') renderMembers(snap);
+        });
+    }
+};
+
+/* ─── 대시보드 렌더 ─── */
+function renderDashboard() {
+    const todayStr = new Date().toLocaleDateString('ko-KR');
+    const todayCnt   = allBookings.filter(b => (b.dateStr || '').startsWith(todayStr)).length;
+    const pendingCnt = allBookings.filter(b => b.status === '접수중').length;
+    document.getElementById('stat-today').textContent   = todayCnt;
+    document.getElementById('stat-pending').textContent = pendingCnt;
+    document.getElementById('stat-total').textContent   = allBookings.length;
+    const recent = allBookings.slice(0, 5);
+    document.getElementById('dash-recent').innerHTML = recent.length
+        ? recent.map(b => `
+            <div class="booking-item">
+                <div class="booking-top">
+                    <div><strong>${b.name}</strong> <span class="text-muted small">· ${b.size}</span></div>
+                    <span class="status-badge badge-${b.status}">${b.status}</span>
+                </div>
+                <div class="booking-info">
+                    <p>📞 ${b.phone}</p>
+                    <p>📍 ${b.address}</p>
+                </div>
+            </div>`).join('')
+        : '<div class="empty"><p>예약이 없습니다</p></div>';
+}
+
+/* ─── 예약 목록 렌더 ─── */
+function renderBookings() {
+    const listEl   = document.getElementById('bk-list');
+    const filtered = bkFilter ? allBookings.filter(b => b.status === bkFilter) : allBookings;
+    if (!filtered.length) {
+        listEl.innerHTML = '<div class="empty"><div class="ei">📭</div><p>예약이 없습니다</p></div>';
+        return;
+    }
+    listEl.innerHTML = filtered.map(b => `
+        <div class="booking-item">
+            <div class="booking-top">
+                <div>
+                    <strong>${b.name}</strong>
+                    <span class="text-muted small"> · ${b.size}</span>
+                    <div class="text-muted" style="font-size:0.72rem;">${b.dateStr || ''}</div>
+                </div>
+                <span class="status-badge badge-${b.status}">${b.status}</span>
+            </div>
+            <div class="booking-info">
+                <p>📞 ${b.phone}</p>
+                <p>📍 ${b.address}</p>
+                ${b.facilityRequest ? '<p class="text-primary fw-bold">✅ 시설보완 요청</p>' : ''}
+                ${b.memo ? `<p>📝 ${b.memo}</p>` : ''}
+                ${b.workerName ? `<p>👷 담당: <b>${b.workerName}</b></p>` : ''}
+            </div>
+            <div class="mt-2">
+                ${['접수중','배정완료','출동중','완료','취소'].map(s =>
+                    `<button class="status-btn ${b.status===s?'on':''}" onclick="changeStatus('${b.id}','${s}')">${s}</button>`
+                ).join('')}
+            </div>
+            ${b.status === '배정완료' || b.status === '출동중' ? `
+            <div class="mt-2 d-flex gap-2">
+                <input type="text" id="wa-${b.id}" class="form-control form-control-sm"
+                    placeholder="담당 작업자 이름" value="${b.workerName||''}" style="border-radius:8px;">
+                <button class="btn btn-sm btn-dark" style="border-radius:8px;white-space:nowrap;" onclick="assignWorker('${b.id}')">배정</button>
+            </div>` : ''}
+        </div>
+    `).join('');
+}
+
+window.filterBk = function(status) { bkFilter = status; renderBookings(); };
+
+window.changeStatus = async function(bkId, status) {
+    await update(ref(db, 'bookings/' + bkId), { status });
+    showToast('상태 변경: ' + status);
+};
+window.assignWorker = async function(bkId) {
+    const el = document.getElementById('wa-' + bkId);
+    if (!el || !el.value.trim()) return showToast('작업자 이름을 입력하세요.');
+    await update(ref(db, 'bookings/' + bkId), { workerName: el.value.trim() });
+    showToast('작업자 배정 완료');
+};
+
+/* ─── 작업자 렌더 ─── */
+function renderWorkers(snap) {
+    const listEl = document.getElementById('wk-list');
+    const statEl = document.getElementById('stat-ready');
+    const workers = [];
+    if (snap.exists()) {
+        snap.forEach(c => {
+            const d = c.val();
+            if (d.status === 'approved') workers.push({ key: c.key, ...d });
+        });
+    }
+    const readyCnt = workers.filter(w => w.workerStatus === '대기중').length;
+    if (statEl) statEl.textContent = readyCnt;
+
+    if (!workers.length) {
+        listEl.innerHTML = '<div class="empty"><div class="ei">👷</div><p>작업자가 없습니다</p></div>';
+        return;
+    }
+    listEl.innerHTML = workers.map(w => `
+        <div class="worker-manage-card">
+            <div>
+                <div class="fw-bold">
+                    ${w.name}
+                    <span class="badge ms-1 ${w.role==='master'?'bg-danger':w.role==='admin'?'bg-primary':'bg-secondary'}"
+                        style="font-size:0.62rem;">
+                        ${w.role==='master'?'마스터':w.role==='admin'?'관리자':'작업자'}
+                    </span>
+                </div>
+                <div class="text-muted small">${w.area||''} · ${w.phone||''}</div>
+                <div class="small mt-1 ${w.workerStatus==='대기중'?'text-success fw-bold':'text-danger'}">
+                    ${w.workerStatus==='대기중'?'🟢 대기중':'🔴 출동중'}
+                </div>
+            </div>
+            ${w.role !== 'master' ? `
+            <button class="toggle-btn ${w.workerStatus==='대기중'?'toggle-ready':'toggle-busy'}"
+                onclick="toggleWorker('${w.key}','${w.workerStatus||'대기중'}')">
+                ${w.workerStatus==='대기중'?'대기중 →<br>출동중 변경':'출동중 →<br>대기중 변경'}
+            </button>` : ''}
+        </div>
+    `).join('');
+}
+
+window.toggleWorker = async function(key, cur) {
+    const next = cur === '대기중' ? '출동중' : '대기중';
+    await update(ref(db, 'users/' + key), { workerStatus: next });
+    showToast('상태 변경: ' + next);
+};
+
+/* ─── 회원 관리 렌더 ─── */
+function renderMembers(snap) {
+    const pEl = document.getElementById('mem-pending');
+    const aEl = document.getElementById('mem-approved');
+    const pending = [], approved = [];
+    if (snap.exists()) {
+        snap.forEach(c => {
+            const d = c.val();
+            if (d.role === 'master') return;
+            if (d.status === 'pending')  pending.push({ key: c.key, ...d });
+            if (d.status === 'approved') approved.push({ key: c.key, ...d });
+        });
+    }
+    pEl.innerHTML = pending.length ? pending.map(m => `
+        <div class="member-card">
+            <div><strong>${m.name}</strong> <span class="text-muted small">(${m.id})</span></div>
+            <div class="text-muted small">${m.phone} · ${m.area}</div>
+            <div class="member-actions">
+                <button class="mbtn mbtn-approve" onclick="approveMem('${m.key}')">✅ 승인</button>
+                <button class="mbtn mbtn-reject"  onclick="rejectMem('${m.key}')">❌ 거절</button>
+            </div>
+        </div>`) .join('') : '<p class="text-muted small">대기 중인 신청자 없음</p>';
+
+    aEl.innerHTML = approved.length ? approved.map(m => `
+        <div class="member-card">
+            <div>
+                <strong>${m.name}</strong>
+                <span class="badge ms-1 ${m.role==='admin'?'bg-primary':'bg-secondary'}" style="font-size:0.62rem;">
+                    ${m.role==='admin'?'관리자':'작업자'}
+                </span>
+                <span class="text-muted small ms-1">(${m.id})</span>
+            </div>
+            <div class="text-muted small">${m.phone} · ${m.area}</div>
+            <div class="member-actions">
+                ${m.role==='worker'
+                    ? `<button class="mbtn mbtn-promote" onclick="promoteMem('${m.key}')">⬆️ 관리자 승격</button>`
+                    : `<button class="mbtn mbtn-demote"  onclick="demoteMem('${m.key}')">⬇️ 작업자로</button>`}
+                <button class="mbtn mbtn-reject" onclick="revokeMem('${m.key}')">🚫 계정 정지</button>
+            </div>
+        </div>`).join('') : '<p class="text-muted small">승인된 회원 없음</p>';
+}
+
+window.approveMem = async k => { await update(ref(db,'users/'+k),{status:'approved'}); showToast('✅ 승인 완료'); };
+window.rejectMem  = async k => { await update(ref(db,'users/'+k),{status:'rejected'}); showToast('거절 처리 완료'); };
+window.revokeMem  = async k => {
+    if (!confirm('계정을 정지하겠습니까?')) return;
+    await update(ref(db,'users/'+k),{status:'rejected'}); showToast('계정 정지 완료');
+};
+window.promoteMem = async k => { await update(ref(db,'users/'+k),{role:'admin'});  showToast('관리자로 승격 완료'); };
+window.demoteMem  = async k => { await update(ref(db,'users/'+k),{role:'worker'}); showToast('작업자로 변경 완료'); };
+
+/* ── 앱 시작 ── */
+goTo('main');
+</script>
+</body>
+</html>
