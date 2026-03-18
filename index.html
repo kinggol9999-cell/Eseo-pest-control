@@ -1,1899 +1,1012 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>24시 바퀴벌레 긴급출동</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700;900&display=swap');
-        @font-face {
-            font-family: 'Pretendard';
-            src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
-            font-weight: 400;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>24시 바퀴벌레 긴급출동</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+@font-face { font-family:'Pretendard'; src:url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff'); }
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;font-family:'Pretendard',sans-serif;background:#f8f9fa;overflow-x:hidden;}
+body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
+.screen{display:none;}
+@keyframes slideDown{from{transform:translateY(-100%);opacity:0;}to{transform:translateY(0);opacity:1;}}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.4;}}
+@keyframes pulse{0%,100%{box-shadow:0 2px 12px rgba(231,76,60,.15);}50%{box-shadow:0 2px 20px rgba(231,76,60,.45);}}
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body {
-            background-color: #f8f9fa;
-            font-family: 'Pretendard', sans-serif;
-            margin: 0; padding: 0; overflow-x: hidden;
-            overscroll-behavior: none;
-        }
-        body.main-active {
-            overflow: hidden;
-            position: fixed;
-            width: 100%;
-            height: 100%;
-        }
-        /* ── 타이틀 텍스트 ── */
-        .main-title-wrap {
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            z-index: 3;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-top: 12vh;
-            text-align: center;
-        }
-        .title-badge {
-            display: inline-block;
-            background: #e74c3c;
-            color: white;
-            font-size: 0.7rem;
-            font-weight: 900;
-            letter-spacing: 2px;
-            padding: 5px 16px;
-            border-radius: 30px;
-            margin-bottom: 14px;
-        }
-        .title-main {
-            font-family: 'Noto Serif KR', serif;
-            font-size: 2.4rem;
-            font-weight: 900;
-            color: white;
-            line-height: 1.2;
-            letter-spacing: -1px;
-            text-shadow: 0 3px 16px rgba(0,0,0,0.8), 0 0 40px rgba(0,0,0,0.4);
-            margin-bottom: 8px;
-        }
-        .title-sub-line {
-            font-family: 'Noto Serif KR', serif;
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: rgba(255,255,255,0.93);
-            letter-spacing: 2px;
-            text-shadow: 0 2px 12px rgba(0,0,0,0.7);
-            margin-bottom: 10px;
-        }
-        .title-desc {
-            color: rgba(255,255,255,0.65);
-            font-size: 0.78rem;
-            letter-spacing: 1.5px;
-            margin-top: 2px;
-        }
-        .title-divider {
-            width: 36px; height: 2px;
-            background: #e74c3c;
-            border-radius: 2px;
-            margin: 12px auto 0;
-        }
+/* 메인 */
+#s-main{position:relative;min-height:100vh;display:none;flex-direction:column;justify-content:flex-end;padding-bottom:50px;background:url('배경화면.png') center/cover no-repeat;}
+#s-main.active{display:flex!important;}
+#s-main::before{content:"";position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:1;}
+.t-wrap{position:absolute;top:0;left:0;right:0;z-index:3;text-align:center;padding-top:12vh;}
+.t-badge{display:inline-block;background:#e74c3c;color:#fff;font-size:.7rem;font-weight:900;letter-spacing:2px;padding:5px 16px;border-radius:30px;margin-bottom:14px;}
+.t-main{font-family:'Noto Serif KR',serif;font-size:2.4rem;font-weight:900;color:#fff;line-height:1.2;text-shadow:0 3px 16px rgba(0,0,0,.8);margin-bottom:8px;}
+.t-sub{font-family:'Noto Serif KR',serif;font-size:1.5rem;font-weight:700;color:rgba(255,255,255,.93);letter-spacing:2px;text-shadow:0 2px 12px rgba(0,0,0,.7);margin-bottom:6px;}
+.t-desc{color:rgba(255,255,255,.65);font-size:.78rem;letter-spacing:1.5px;}
+.t-line{width:36px;height:2px;background:#e74c3c;border-radius:2px;margin:12px auto 0;}
+.main-btns{position:relative;z-index:2;width:100%;padding:0 20px;}
+.mbtn{height:85px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;border-radius:15px;margin-bottom:12px;background:transparent;border:2px solid rgba(255,255,255,.7);color:#fff!important;cursor:pointer;text-shadow:0 1px 3px rgba(0,0,0,.5);transition:all .15s;user-select:none;}
+.mbtn:active{transform:scale(.97);background:rgba(255,255,255,.2);}
+.adm-ico{position:absolute;top:16px;right:16px;z-index:10;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:7px 11px;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;backdrop-filter:blur(6px);}
 
-        /* ── 모든 화면 기본 숨김 ── */
-        .screen { display: none; }
-        .screen.active { display: block; }
+/* 페이지 공통 */
+.pg{display:none;padding:22px 16px 80px;background:#fff;min-height:100vh;overflow-y:auto;}
+.pg.active{display:block;}
+.dark-pg{display:none;min-height:100vh;background:#1a1a2e;flex-direction:column;align-items:center;justify-content:center;padding:30px 24px;}
+.dark-pg.active{display:flex!important;}
+.dark-pg h2{color:#fff;font-weight:900;font-size:1.4rem;margin-bottom:6px;}
+.dark-pg > p{color:rgba(255,255,255,.5);font-size:.82rem;margin-bottom:28px;}
+.pg-ttl{font-weight:700;font-size:1.1rem;color:#111;border-left:5px solid #222;padding-left:10px;margin-bottom:20px;}
+.back-btn{border-radius:12px;padding:14px;font-weight:700;cursor:pointer;margin-top:20px;width:100%;}
 
-        /* ── 메인 타이틀 화면 ── */
-        #screen-main {
-            position: relative;
-            background-image: url('배경화면.png');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            min-height: 100vh;
-            display: none; /* JS가 active 추가하면 flex로 변경 */
-            flex-direction: column;
-            justify-content: flex-end;
-            padding-bottom: 50px;
-        }
-        #screen-main.active {
-            display: flex !important;
-        }
-        #screen-main::before {
-            content: "";
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.45);
-            z-index: 1;
-        }
-        .main-menu-container {
-            position: relative;
-            z-index: 2;
-            width: 100%;
-            padding: 0 20px;
-        }
-        .menu-btn {
-            height: 85px;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 1rem;
-            white-space: nowrap; border-radius: 15px;
-            margin-bottom: 12px;
-            background: transparent;
-            border: 2px solid rgba(255,255,255,0.7);
-            color: white !important;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-            transition: all 0.15s;
-            cursor: pointer;
-            user-select: none;
-        }
-        .menu-btn:hover  { background: rgba(255,255,255,0.12); }
-        .menu-btn:active { transform: scale(0.97); background: rgba(255,255,255,0.22); }
-        .menu-btn-admin {
-            background: rgba(231,76,60,0.18) !important;
-            border-color: rgba(231,76,60,0.6) !important;
-        }
+/* 로그인 박스 */
+.lbox{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:26px 22px;width:100%;}
+.lbox input{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:12px;padding:13px;margin-bottom:13px;width:100%;font-size:1rem;outline:none;}
+.lbox input::placeholder{color:rgba(255,255,255,.4);}
+.lbox input:focus{border-color:#e74c3c;}
+.red-btn{background:#e74c3c;color:#fff;border:none;border-radius:12px;padding:14px;width:100%;font-weight:700;font-size:1rem;cursor:pointer;}
 
-        /* ── 섹션 공통 ── */
-        .section-page {
-            display: none;
-            padding: 25px 20px 30px;
-            background: white;
-            min-height: 100vh;
-        }
-        .section-page.active { display: block; }
+/* 가격표 */
+.ptbl{width:100%;font-size:.85rem;border:1px solid #eee;border-radius:10px;overflow:hidden;margin-bottom:16px;}
+.ptbl th,.ptbl td{padding:11px 6px;border-bottom:1px solid #eee;text-align:center;}
+.ptbl th{background:#f8f9fa;color:#666;font-size:.75rem;}
+.pb{font-weight:700;color:#000;}.pr{font-weight:700;color:#d63031;}
 
-        h3 {
-            font-weight: bold; margin-bottom: 25px; color: #111;
-            border-left: 5px solid #222; padding-left: 10px;
-            font-size: 1.1rem;
-        }
+/* 안내박스 */
+.ybox{background:#fff9db;border:1px solid #fab005;border-radius:10px;padding:12px;margin-bottom:16px;font-size:.85rem;}
+.rbox{background:#fff5f5;border:1px solid #ffa8a8;border-radius:12px;padding:15px;margin-bottom:16px;}
+.rbox h6{color:#e03131;font-weight:700;font-size:.9rem;margin-bottom:8px;}
+.rbox p{font-size:.83rem;color:#333;line-height:1.7;margin:0;}
+.bluebox{background:#e7f5ff;border:1px solid #74c0fc;color:#1971c2;border-radius:12px;padding:15px;margin-bottom:20px;font-weight:700;font-size:.88rem;}
+.optbox{background:#f8f9fa;padding:15px;border-radius:12px;border:1px dashed #ccc;margin-bottom:16px;}
 
-        /* ── 공통 박스 ── */
-        .option-box {
-            background: #f8f9fa; padding: 15px; border-radius: 12px;
-            border: 1px dashed #ccc; margin-bottom: 20px;
-        }
-        .price-table {
-            width: 100%; border-radius: 10px; overflow: hidden;
-            font-size: 0.85rem; border: 1px solid #eee; margin-bottom: 20px;
-        }
-        .price-table th, .price-table td {
-            padding: 12px 6px; border-bottom: 1px solid #eee; text-align: center;
-        }
-        .price-table th { background-color: #f8f9fa; color: #666; font-size: 0.75rem; }
-        .price-table td.price-bold { font-weight: bold; color: #000; }
-        .price-table td.price-red  { font-weight: bold; color: #d63031; }
+/* 상태 배지 */
+.st-b{display:inline-block;padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:700;}
+.st-접수중{background:#ffc107;color:#333;}.st-배정완료{background:#17a2b8;color:#fff;}
+.st-출동중{background:#fd7e14;color:#fff;}.st-완료{background:#28a745;color:#fff;}.st-취소{background:#6c757d;color:#fff;}
 
-        .notice-card {
-            background: #fff5f5; border: 1px solid #ffa8a8;
-            border-radius: 12px; padding: 15px; margin-bottom: 20px;
-        }
-        .notice-card h6 { color: #e03131; font-weight: bold; font-size: 0.95rem; margin-bottom: 10px; }
-        .notice-card p  { font-size: 0.85rem; color: #333; line-height: 1.7; margin-bottom: 0; }
+/* 작업자 */
+.w-pub{border:1px solid #eee;border-radius:14px;padding:14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;}
+.dot-g{background:#2ecc71;box-shadow:0 0 6px #2ecc71;animation:blink 1.5s infinite;}
+.dot-r{background:#e74c3c;}.dot-x{background:#aaa;}
+.cbtn{background:#212529;color:#fff!important;border-radius:10px;padding:8px 12px;font-size:.8rem;font-weight:700;text-decoration:none;display:inline-block;}
 
-        .deposit-info {
-            background: #fff9db; border: 1px solid #fab005;
-            border-radius: 10px; padding: 12px; margin-bottom: 20px; font-size: 0.85rem;
-        }
-        .refund-banner {
-            background: #e7f5ff; border: 1px solid #74c0fc;
-            color: #1971c2; border-radius: 12px; padding: 15px;
-            margin-bottom: 25px; font-weight: bold; font-size: 0.88rem;
-        }
+/* 관리자 패널 */
+#s-admin{display:none;min-height:100vh;background:#f4f4f4;overflow-y:auto;}
+#s-admin.active{display:block!important;}
+.anav{display:flex;background:#fff;border-bottom:1px solid #eee;position:sticky;top:0;z-index:100;overflow-x:auto;}
+.atab{flex:1;min-width:65px;text-align:center;padding:13px 4px;font-size:.7rem;color:#999;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s;}
+.atab.on{color:#e74c3c;border-bottom-color:#e74c3c;font-weight:700;}
+.apg{display:none;padding:14px 14px 80px;overflow-y:auto;}
+.apg.on{display:block;}
+.cbadge{display:none;background:#e74c3c;color:#fff;border-radius:50%;width:16px;height:16px;font-size:.6rem;font-weight:900;line-height:16px;text-align:center;margin-left:3px;vertical-align:middle;}
 
-        .btn-back-group { margin-top: 30px; }
-        .btn-back { border-radius: 12px; padding: 15px; font-weight: bold; cursor: pointer; }
+/* 통계 */
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.sc{background:#fff;border-radius:14px;padding:16px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.sn{font-size:2rem;font-weight:900;color:#e74c3c;}.sl{font-size:.72rem;color:#999;margin-top:4px;}
 
-        /* ── 작업자 카드 ── */
-        .call-btn {
-            background: #212529; color: white !important;
-            border-radius: 10px; padding: 8px 12px;
-            font-size: 0.8rem; font-weight: bold;
-            text-decoration: none; display: inline-block;
-        }
-        .status-dot {
-            width: 8px; height: 8px; border-radius: 50%;
-            display: inline-block; margin-right: 4px;
-        }
-        .dot-ready { background: #2ecc71; box-shadow: 0 0 6px #2ecc71; animation: blink 1.5s infinite; }
-        .dot-busy  { background: #e74c3c; }
-        .dot-off   { background: #aaa; }
-        @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+/* 예약카드 */
+.bki{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+.stbtn{font-size:.7rem;padding:5px 9px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer;margin:2px;}
+.stbtn.on{background:#e74c3c;color:#fff;border-color:#e74c3c;}
 
-        /* ── 예약 현황 카드 ── */
-        .booking-card-item {
-            border: 1px solid #eee; border-radius: 16px;
-            padding: 16px; margin-bottom: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        .badge-접수중  { background:#ffc107; color:#333; }
-        .badge-배정완료{ background:#17a2b8; color:white; }
-        .badge-출동중  { background:#fd7e14; color:white; }
-        .badge-완료    { background:#28a745; color:white; }
-        .badge-취소    { background:#6c757d; color:white; }
+/* 작업자 관리 */
+.wkc{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.05);display:flex;align-items:center;justify-content:space-between;}
+.tg{padding:7px 14px;border-radius:20px;border:none;font-size:.75rem;font-weight:700;cursor:pointer;}
+.tg-g{background:#d4edda;color:#155724;}.tg-r{background:#f8d7da;color:#721c24;}
+.memc{background:#fff;border-radius:14px;padding:14px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+.mact{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.mb2{flex:1;min-width:70px;padding:8px 6px;border-radius:8px;border:none;font-size:.72rem;font-weight:700;cursor:pointer;}
+.mb2-g{background:#28a745;color:#fff;}.mb2-r{background:#e74c3c;color:#fff;}.mb2-b{background:#007bff;color:#fff;}.mb2-x{background:#6c757d;color:#fff;}
 
-        /* ── 관리자 로그인 화면 ── */
-        #screen-admin-gate {
-            background: #1a1a2e;
-            min-height: 100vh;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 30px 24px;
-        }
-        #screen-admin-gate.active { display: flex !important; }
-        #screen-admin-gate h2  { color: white; font-weight: 900; font-size: 1.4rem; margin-bottom: 6px; }
-        #screen-admin-gate > p { color: rgba(255,255,255,0.5); font-size: 0.82rem; margin-bottom: 30px; }
+/* 콜탭 */
+.st-bar{background:linear-gradient(135deg,#1a1a2e,#16213e);padding:16px;color:#fff;}
+.ws-btn{border:none;border-radius:20px;color:#fff;font-size:.78rem;font-weight:700;padding:7px 14px;cursor:pointer;opacity:.55;transition:all .15s;margin:3px;}
+.ws-btn.on{opacity:1;box-shadow:0 0 0 3px #fff;transform:scale(1.05);}
+.call-card{background:#fff;border-radius:16px;padding:14px;margin-bottom:10px;box-shadow:0 2px 12px rgba(0,0,0,.08);border-left:4px solid #e74c3c;animation:pulse 2s ease-in-out infinite;}
+.acc-btn{background:linear-gradient(135deg,#27ae60,#2ecc71);color:#fff;border:none;border-radius:12px;padding:12px 0;width:100%;font-weight:900;font-size:.95rem;cursor:pointer;margin-top:10px;}
+.my-rec{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.05);}
 
-        .admin-login-box {
-            background: rgba(255,255,255,0.07);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 20px; padding: 28px 24px; width: 100%;
-        }
-        .admin-login-box .form-control {
-            background: rgba(255,255,255,0.09);
-            border: 1px solid rgba(255,255,255,0.2);
-            color: white; border-radius: 12px; padding: 14px;
-            margin-bottom: 14px;
-        }
-        .admin-login-box .form-control::placeholder { color: rgba(255,255,255,0.4); }
-        .admin-login-box .form-control:focus {
-            background: rgba(255,255,255,0.13);
-            border-color: #e74c3c; box-shadow: none; color: white;
-        }
-        .btn-admin-login {
-            background: #e74c3c; color: white; border: none;
-            border-radius: 12px; padding: 15px; width: 100%;
-            font-weight: bold; font-size: 1rem; cursor: pointer;
-            transition: background 0.2s;
-        }
-        .btn-admin-login:hover { background: #c0392b; }
-
-        /* ── 가입 신청 화면 ── */
-        #screen-register {
-            background: #1a1a2e;
-            min-height: 100vh;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 30px 24px;
-        }
-        #screen-register.active { display: flex !important; }
-        #screen-register h2  { color: white; font-weight: 900; font-size: 1.4rem; margin-bottom: 6px; }
-        #screen-register > p { color: rgba(255,255,255,0.5); font-size: 0.82rem; margin-bottom: 30px; }
-
-        /* ── 관리자 패널 ── */
-        #screen-admin-panel { display: none; min-height: 100vh; background: #f4f4f4; }
-        #screen-admin-panel.active { display: block !important; }
-
-        .admin-tab-nav {
-            display: flex; background: white;
-            border-bottom: 1px solid #eee;
-            position: sticky; top: 0; z-index: 100;
-            overflow-x: auto; -webkit-overflow-scrolling: touch;
-        }
-        .admin-tab {
-            flex: 1; min-width: 70px; text-align: center;
-            padding: 14px 6px; font-size: 0.72rem; color: #999;
-            cursor: pointer; white-space: nowrap;
-            border-bottom: 2px solid transparent; transition: all 0.2s;
-        }
-        .admin-tab.active { color: #e74c3c; border-bottom-color: #e74c3c; font-weight: bold; }
-
-        .admin-tab-content { display: none; padding: 16px; }
-        .admin-tab-content.active { display: block; }
-
-        /* ── 대시보드 통계 ── */
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .stat-card {
-            background: white; border-radius: 14px; padding: 16px;
-            text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        }
-        .stat-num   { font-size: 2rem; font-weight: 900; color: #e74c3c; }
-        .stat-label { font-size: 0.72rem; color: #999; margin-top: 4px; }
-
-        /* ── 예약 아이템 ── */
-        .booking-item {
-            background: white; border-radius: 14px;
-            padding: 14px; margin-bottom: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        .booking-top {
-            display: flex; justify-content: space-between;
-            align-items: flex-start; margin-bottom: 8px;
-        }
-        .booking-info p { margin: 0; font-size: 0.82rem; color: #555; line-height: 1.75; }
-        .status-badge {
-            display: inline-block; padding: 4px 10px; border-radius: 20px;
-            font-size: 0.7rem; font-weight: bold; white-space: nowrap;
-        }
-        .status-btn {
-            font-size: 0.7rem; padding: 5px 9px; border-radius: 8px;
-            border: 1px solid #ddd; background: white; cursor: pointer;
-            margin: 2px; transition: all 0.15s;
-        }
-        .status-btn.on { background: #e74c3c; color: white; border-color: #e74c3c; }
-
-        /* ── 작업자 관리 카드 ── */
-        .worker-manage-card {
-            background: white; border-radius: 14px; padding: 14px;
-            margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            display: flex; align-items: center; justify-content: space-between;
-        }
-        .toggle-btn {
-            padding: 7px 14px; border-radius: 20px; border: none;
-            font-size: 0.75rem; font-weight: bold; cursor: pointer;
-            transition: all 0.2s;
-        }
-        .toggle-ready { background: #d4edda; color: #155724; }
-        .toggle-busy  { background: #f8d7da; color: #721c24; }
-
-        /* ── 회원 관리 카드 ── */
-        .member-card {
-            background: white; border-radius: 14px; padding: 14px;
-            margin-bottom: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        .member-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
-        .mbtn {
-            flex: 1; min-width: 70px; padding: 8px 6px; border-radius: 8px;
-            border: none; font-size: 0.72rem; font-weight: bold; cursor: pointer;
-        }
-        .mbtn-approve { background: #28a745; color: white; }
-        .mbtn-reject  { background: #e74c3c; color: white; }
-        .mbtn-promote { background: #007bff; color: white; }
-        .mbtn-demote  { background: #6c757d; color: white; }
-
-        /* ── 공개 작업자 현황 ── */
-        .worker-public {
-            border: 1px solid #eee; border-radius: 14px; padding: 14px;
-            margin-bottom: 10px; display: flex;
-            align-items: center; justify-content: space-between;
-            background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-        }
-
-        /* ── 알람 배너 애니메이션 ── */
-        @keyframes slideDown {
-            from { transform: translateY(-100%); opacity: 0; }
-            to   { transform: translateY(0);     opacity: 1; }
-        }
-
-        /* ── 토스트 ── */
-        .toast-bar {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: #333; color: white; padding: 11px 22px;
-            border-radius: 30px; font-size: 0.83rem;
-            z-index: 9999; opacity: 0; transition: opacity 0.3s;
-            white-space: nowrap; pointer-events: none;
-        }
-        .toast-bar.show { opacity: 1; }
-
-        /* ── 로딩 ── */
-        .loading { text-align: center; padding: 40px; color: #bbb; font-size: 0.9rem; }
-
-        /* ── 빈 상태 ── */
-        .empty { text-align: center; padding: 50px 20px; color: #ccc; }
-        .empty .ei { font-size: 2.8rem; margin-bottom: 8px; }
-        .empty p   { font-size: 0.85rem; }
-
-        /* 폼 */
-        .form-control, .form-select { border-radius: 12px !important; }
-        .form-control:focus, .form-select:focus { box-shadow: 0 0 0 2px rgba(34,34,34,0.15) !important; border-color: #333 !important; }
-
-        /* 섹션 제목 구분선 */
-        .sec-head { border-left: 5px solid #222; padding-left: 10px; font-size: 1rem; margin-bottom: 14px; }
-
-        /* 상태 버튼 */
-        .ws-btn {
-            border: none; border-radius: 20px; color: white;
-            font-size: 0.78rem; font-weight: bold; padding: 7px 14px;
-            cursor: pointer; opacity: 0.6; transition: all 0.15s;
-        }
-        .ws-btn.active-st { opacity: 1; box-shadow: 0 0 0 3px white; transform: scale(1.05); }
-        .ws-btn:active { transform: scale(0.96); }
-
-        /* 실시간 콜 카드 */
-        .call-card {
-            background: white; border-radius: 16px;
-            padding: 14px; margin-bottom: 10px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-            border-left: 4px solid #e74c3c;
-            animation: callPulse 2s ease-in-out infinite;
-        }
-        .call-card.matched { border-left-color: #27ae60; animation: none; opacity: 0.7; }
-        @keyframes callPulse {
-            0%,100% { box-shadow: 0 2px 12px rgba(231,76,60,0.15); }
-            50%      { box-shadow: 0 2px 20px rgba(231,76,60,0.45); }
-        }
-        .call-accept-btn {
-            background: linear-gradient(135deg,#27ae60,#2ecc71);
-            color: white; border: none; border-radius: 12px;
-            padding: 10px 0; width: 100%; font-weight: 900;
-            font-size: 0.95rem; cursor: pointer; margin-top: 10px;
-            transition: all 0.15s;
-        }
-        .call-accept-btn:active { transform: scale(0.97); }
-        .call-accept-btn:disabled { background: #aaa; }
-    </style>
+/* 공통 */
+.load{text-align:center;padding:40px;color:#bbb;font-size:.9rem;}
+.empty{text-align:center;padding:40px 20px;color:#ccc;}
+.empty .ei{font-size:2.8rem;margin-bottom:8px;}
+.empty p{font-size:.85rem;}
+.form-control,.form-select{border-radius:12px!important;}
+.toast-bar{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:11px 22px;border-radius:30px;font-size:.83rem;z-index:9999;opacity:0;transition:opacity .3s;white-space:nowrap;pointer-events:none;}
+.toast-bar.show{opacity:1;}
+</style>
 </head>
 <body>
 
-<!-- 토스트 -->
 <div class="toast-bar" id="toast"></div>
 
-<!-- ════════════════════════════════
-     메인 화면
-════════════════════════════════ -->
-<div id="screen-main" class="screen">
-    <div style="
-        position:relative;
-        background-image:url('배경화면.png');
-        background-size:cover; background-position:center; background-repeat:no-repeat;
-        min-height:100vh; display:flex; align-items:flex-end; padding-bottom:50px;
-    ">
-        <div style="
-            content:''; position:absolute; top:0; left:0; right:0; bottom:0;
-            background:rgba(0,0,0,0.4); z-index:1;
-        "></div>
-
-        <!-- 가운데 상단 제목 -->
-        <div class="main-title-wrap">
-            <div class="title-badge">24 HOURS · 365 DAYS</div>
-            <div class="title-main">24시간</div>
-            <div class="title-sub-line">바퀴벌레 긴급출동</div>
-            <div class="title-desc">전지역 즉시 출동 · 전문 방역 서비스</div>
-            <div class="title-divider"></div>
-        </div>
-
-        <!-- 우측 상단 관리자 아이콘 -->
-        <div onclick="goTo('admin-gate')" style="
-            position:absolute; top:16px; right:16px; z-index:10;
-            background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.3);
-            border-radius:10px; padding:7px 11px;
-            color:white; font-size:0.72rem; font-weight:bold;
-            cursor:pointer; display:flex; align-items:center; gap:5px;
-            backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
-            user-select:none; -webkit-tap-highlight-color:transparent;
-        ">
-            🔐 <span>관리자</span>
-        </div>
-
-        <div class="container main-menu-container" style="position:relative;z-index:2;width:100%;padding:0 20px;">
-            <div class="row gx-2">
-                <div class="col-6">
-                    <div class="btn menu-btn w-100" onclick="goTo('booking')">📅 예약하기</div>
-                </div>
-                <div class="col-6">
-                    <div class="btn menu-btn w-100" onclick="goTo('price')">💰 가격안내</div>
-                </div>
-                <div class="col-6">
-                    <div class="btn menu-btn w-100" onclick="goTo('my-booking')">📋 내 예약정보</div>
-                </div>
-                <div class="col-6">
-                    <div class="btn menu-btn w-100" onclick="goTo('about')">📢 서비스소개</div>
-                </div>
-            </div>
-        </div>
+<!-- 메인 -->
+<div id="s-main" class="screen">
+  <div class="t-wrap">
+    <div class="t-badge">24 HOURS · 365 DAYS</div>
+    <div class="t-main">24시간</div>
+    <div class="t-sub">바퀴벌레 긴급출동</div>
+    <div class="t-desc">전지역 즉시 출동 · 전문 방역 서비스</div>
+    <div class="t-line"></div>
+  </div>
+  <div onclick="goTo('admin-gate')" class="adm-ico">🔐 <span>관리자</span></div>
+  <div class="main-btns">
+    <div class="row gx-2">
+      <div class="col-6"><div class="mbtn" onclick="goTo('booking')">📅 예약하기</div></div>
+      <div class="col-6"><div class="mbtn" onclick="goTo('price')">💰 가격안내</div></div>
+      <div class="col-6"><div class="mbtn" onclick="goTo('my-booking')">📋 내 예약정보</div></div>
+      <div class="col-6"><div class="mbtn" onclick="goTo('about')">📢 서비스소개</div></div>
     </div>
+  </div>
 </div>
 
-<!-- ════════════════════════════════
-     예약하기
-════════════════════════════════ -->
-<div id="screen-booking" class="screen section-page">
-    <h3>📅 출동 예약</h3>
-
-    <div class="mb-3">
-        <label class="form-label small text-muted">이름 *</label>
-        <input type="text" id="bk-name" class="form-control form-control-lg" placeholder="홍길동">
+<!-- 예약하기 -->
+<div id="s-booking" class="screen pg">
+  <div class="pg-ttl">📅 출동 예약</div>
+  <div class="mb-3"><label class="form-label small text-muted">이름 *</label>
+    <input type="text" id="bk-name" class="form-control form-control-lg" placeholder="홍길동"></div>
+  <div class="mb-3"><label class="form-label small text-muted">연락처 *</label>
+    <input type="tel" id="bk-phone" class="form-control form-control-lg" placeholder="010-0000-0000"></div>
+  <div class="mb-3"><label class="form-label small text-muted">출동 주소지 *</label>
+    <input type="text" id="bk-address" class="form-control form-control-lg" placeholder="상세 주소"></div>
+  <div class="mb-3"><label class="form-label small text-muted">평수 선택</label>
+    <select id="bk-size" class="form-select form-select-lg">
+      <option value="원룸 (10평 이하)">원룸 (10평 이하)</option>
+      <option value="투룸 (20평 이하)">투룸 (20평 이하)</option>
+      <option value="쓰리룸 (30평 이하)">쓰리룸 (30평 이하)</option>
+      <option value="30평대 (40평 이하)">30평대 (40평 이하)</option>
+      <option value="40평대 (50평 이하)">40평대 (50평 이하)</option>
+      <option value="50평 이상">50평 이상 (별도 문의)</option>
+    </select></div>
+  <div class="mb-3 optbox">
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" id="bk-fac">
+      <label class="form-check-label" for="bk-fac">
+        <b>시설보완 신청 (추가비 발생 가능)</b><br>
+        <span class="text-muted small">* 간단한 테이핑은 <b>무료</b> · 실리콘/문풍지/배수구 트랩 등 자재 작업 시 1~3만원 추가</span>
+      </label>
     </div>
-    <div class="mb-3">
-        <label class="form-label small text-muted">연락처 *</label>
-        <input type="tel" id="bk-phone" class="form-control form-control-lg" placeholder="010-0000-0000">
-    </div>
-    <div class="mb-3">
-        <label class="form-label small text-muted">출동 주소지 *</label>
-        <input type="text" id="bk-address" class="form-control form-control-lg" placeholder="상세 주소를 입력하세요">
-    </div>
-    <div class="mb-3">
-        <label class="form-label small text-muted">평수 선택</label>
-        <select id="bk-size" class="form-select form-select-lg">
-            <option value="원룸 (10평 이하)">원룸 (10평 이하)</option>
-            <option value="투룸 (20평 이하)">투룸 (20평 이하)</option>
-            <option value="쓰리룸 (30평 이하)">쓰리룸 (30평 이하)</option>
-            <option value="40평대 (50평 이하)">40평대 (50평 이하)</option>
-        </select>
-    </div>
-
-    <div class="mb-4">
-        <label class="form-label small text-muted">시설보완 작업 요청 (옵션)</label>
-        <div class="option-box">
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="bk-facility">
-                <label class="form-check-label" for="bk-facility">
-                    <b>시설보완 신청 (전문 보완 시 추가비 발생)</b><br>
-                    <span class="text-muted small">
-                        * 테이핑 등 간단한 보완은 <b>무료</b>로 해드립니다.<br>
-                        * 실리콘, 문풍지, 배수구 트랩 등 자재가 들어가는 광범위한 작업 시
-                        시설보완비(1~3만원 추가)가 들어갈 수 있습니다.
-                    </span>
-                </label>
-            </div>
-        </div>
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label small text-muted">요청사항 (선택)</label>
-        <textarea id="bk-memo" class="form-control" rows="3" placeholder="추가 요청사항을 입력해 주세요"></textarea>
-    </div>
-
-    <div class="deposit-info text-center">
-        ⚠️ <b>노쇼방지 선납금 안내</b><br>
-        오후 10시 이전: 2만원 / 오후 10시 이후: 3만원
-    </div>
-
-    <div class="btn-back-group">
-        <button class="btn btn-dark w-100 btn-back mb-2" onclick="submitBooking()">예약 신청하기</button>
-        <button class="btn btn-light w-100 btn-back" onclick="goTo('main')">뒤로가기</button>
-    </div>
+  </div>
+  <div class="mb-3"><label class="form-label small text-muted">요청사항 (선택)</label>
+    <textarea id="bk-memo" class="form-control" rows="3" placeholder="추가 요청사항"></textarea></div>
+  <div class="ybox text-center">⚠️ <b>노쇼방지 선납금</b> · 오후 10시 이전: 2만원 / 오후 10시 이후: 3만원</div>
+  <button class="btn btn-dark w-100 back-btn mb-2" onclick="submitBooking()">예약 신청하기</button>
+  <button class="btn btn-light w-100 back-btn" onclick="goTo('main')">뒤로가기</button>
 </div>
 
-<!-- ════════════════════════════════
-     가격 안내
-════════════════════════════════ -->
-<div id="screen-price" class="screen section-page">
-    <h3>💰 서비스 가격표</h3>
-
-    <div class="deposit-info text-center">
-        ⚠️ <b>노쇼방지 선납금 안내</b><br>
-        오후 10시 이전: 2만원 / 오후 10시 이후: 3만원
-    </div>
-
-    <table class="price-table">
-        <thead>
-            <tr><th>구분 (평수)</th><th>오후 10시 이전</th><th>오후 10시 이후</th></tr>
-        </thead>
-        <tbody>
-            <tr><td>10평 이하</td><td class="price-bold">80,000원</td><td class="price-red">120,000원</td></tr>
-            <tr><td>20평 이하</td><td class="price-bold">90,000원</td><td class="price-red">140,000원</td></tr>
-            <tr><td>30평 이하</td><td class="price-bold">110,000원</td><td class="price-red">160,000원</td></tr>
-            <tr><td>40평 이하</td><td class="price-bold">130,000원</td><td class="price-red">180,000원</td></tr>
-            <tr><td>50평 이하</td><td class="price-bold">150,000원</td><td class="price-red">200,000원</td></tr>
-            <tr style="background:#fff5f5;">
-                <td style="text-align:left;padding-left:10px;">
-                    🪳 <b>독일바퀴</b><br>
-                    <span style="font-size:0.72rem;color:#888;">(내부 서식 바퀴)</span>
-                </td>
-                <td colspan="2" style="color:#e03131;font-weight:bold;font-size:0.88rem;">
-                    비용 별도 문의
-                </td>
-            </tr>
-        </tbody>
-    </table>
-    <div style="background:#fff5f5;border:1px solid #ffa8a8;border-radius:10px;padding:11px 14px;margin-bottom:16px;font-size:0.82rem;color:#555;">
-        ⚠️ <b style="color:#e03131;">독일바퀴(내부 서식)</b>는 일반 바퀴벌레보다 박멸 난이도가 높아 현장 상태에 따라 비용이 다르게 책정됩니다. 예약 전 문의 부탁드립니다.
-    </div>
-
-    <div class="btn-back-group">
-        <button class="btn btn-light w-100 btn-back" onclick="goTo('main')">뒤로가기</button>
-    </div>
+<!-- 가격안내 -->
+<div id="s-price" class="screen pg">
+  <div class="pg-ttl">💰 서비스 가격표</div>
+  <div class="ybox text-center">⚠️ <b>노쇼방지 선납금</b> · 오후 10시 이전: 2만원 / 오후 10시 이후: 3만원</div>
+  <table class="ptbl">
+    <thead><tr><th>구분 (평수)</th><th>오후 10시 이전</th><th>오후 10시 이후</th></tr></thead>
+    <tbody>
+      <tr><td>10평 이하</td><td class="pb">80,000원</td><td class="pr">120,000원</td></tr>
+      <tr><td>20평 이하</td><td class="pb">90,000원</td><td class="pr">140,000원</td></tr>
+      <tr><td>30평 이하</td><td class="pb">110,000원</td><td class="pr">160,000원</td></tr>
+      <tr><td>40평 이하</td><td class="pb">130,000원</td><td class="pr">180,000원</td></tr>
+      <tr><td>50평 이하</td><td class="pb">150,000원</td><td class="pr">200,000원</td></tr>
+      <tr style="background:#fff5f5;">
+        <td style="text-align:left;padding-left:10px;">🪳 <b>독일바퀴</b><br><span style="font-size:.72rem;color:#888;">(내부 서식)</span></td>
+        <td colspan="2" style="color:#e03131;font-weight:700;">비용 별도 문의</td>
+      </tr>
+    </tbody>
+  </table>
+  <div style="background:#fff5f5;border:1px solid #ffa8a8;border-radius:10px;padding:11px 14px;margin-bottom:16px;font-size:.82rem;color:#555;">
+    ⚠️ <b style="color:#e03131;">독일바퀴(내부 서식)</b>는 난이도에 따라 별도 책정됩니다. 예약 전 문의 부탁드립니다.
+  </div>
+  <button class="btn btn-light w-100 back-btn" onclick="goTo('main')">뒤로가기</button>
 </div>
 
-<!-- ════════════════════════════════
-     내 예약 조회
-════════════════════════════════ -->
-<div id="screen-my-booking" class="screen section-page">
-    <h3>📋 내 예약 현황</h3>
-
-    <div class="mb-3 d-flex gap-2">
-        <input type="tel" id="search-phone" class="form-control form-control-lg" placeholder="예약 시 입력한 연락처">
-        <button class="btn btn-dark px-4" style="border-radius:12px;white-space:nowrap;" onclick="loadMyBookings()">조회</button>
-    </div>
-
-    <div id="my-booking-list">
-        <div id="no-data" class="text-center py-5 border rounded bg-light">
-            <p class="text-muted mb-0">연락처를 입력하고 조회 버튼을 눌러주세요.</p>
-        </div>
-    </div>
-
-    <div class="btn-back-group">
-        <button class="btn btn-light w-100 btn-back" onclick="goTo('main')">뒤로가기</button>
-    </div>
+<!-- 내 예약 조회 -->
+<div id="s-my-booking" class="screen pg">
+  <div class="pg-ttl">📋 내 예약 현황</div>
+  <div class="mb-3 d-flex gap-2">
+    <input type="tel" id="srch-phone" class="form-control form-control-lg" placeholder="예약 시 입력한 연락처">
+    <button class="btn btn-dark px-4" style="border-radius:12px;white-space:nowrap;" onclick="loadMyBk()">조회</button>
+  </div>
+  <div id="my-bk-list"><div class="empty"><p>연락처를 입력하고 조회하세요</p></div></div>
+  <button class="btn btn-light w-100 back-btn" onclick="goTo('main')">뒤로가기</button>
 </div>
 
-<!-- ════════════════════════════════
-     서비스 소개
-════════════════════════════════ -->
-<div id="screen-about" class="screen section-page">
-    <h3>📢 서비스 소개</h3>
-
-    <div class="refund-banner text-center">
-        🛡️ [본사 보장제 정책]<br>
-        서비스 제공 시 불친절하거나 납득하지 못할 서비스 제공 시
-        저희 본사에서 일부 금액 또는 전액을 환불해 드립니다.
+<!-- 서비스소개 -->
+<div id="s-about" class="screen pg">
+  <div class="pg-ttl">📢 서비스 소개</div>
+  <div class="bluebox text-center">🛡️ [본사 보장제 정책]<br>불친절하거나 납득 못할 서비스 시 일부 또는 전액 환불 보장</div>
+  <h5 class="fw-bold mb-3" style="font-size:1rem;">⚡ 실시간 출동대기 명단</h5>
+  <div id="pub-wk-list"><div class="load">⏳ 불러오는 중...</div></div>
+  <div class="p-4 bg-dark text-white rounded-4 mb-3 mt-3">
+    <div class="mb-2"><span style="background:#e74c3c;color:#fff;font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:20px;">PROFESSIONAL</span></div>
+    <h6 class="fw-bold mb-2" style="font-size:1rem;">🏢 검증된 전문 업체만 엄선합니다</h6>
+    <p class="small lh-lg mb-2" style="opacity:.85;">저희 플랫폼의 대표는 방역 업계에서 오랜 현장 경력을 보유한 전문가입니다. 그 경험을 바탕으로 검증된 업체만을 엄격히 선별하여 서비스를 제공하고 있습니다.</p>
+    <p class="small lh-lg mb-0" style="opacity:.75;">단순 중개가 아닙니다. 전문성·신뢰도·고객 응대 수준까지 직접 확인하고 기준에 부합하는 파트너 업체와 함께합니다.</p>
+  </div>
+  <div style="background:#f8f9fa;border-radius:14px;padding:18px;margin-bottom:14px;border:1px solid #eee;">
+    <h6 class="fw-bold mb-3" style="font-size:.95rem;color:#111;">🔧 기본 서비스 진행</h6>
+    <div style="font-size:.84rem;color:#333;line-height:1.9;">
+      <div>① 배수구·싱크대·출입문 등 내부 살충제 작업</div>
+      <div>② 바퀴벌레 발견 주변 전용 베이트제(먹이제) 투약</div>
+      <div>③ 가정 내 모니터링 트랩 설치</div>
+      <div>④ 내부 서식 방지 · 기존 개체 박멸</div>
     </div>
-
-    <h5 class="fw-bold mb-3" style="font-size:1rem;">⚡ 실시간 출동대기 명단</h5>
-    <div id="public-worker-list">
-        <div class="loading">⏳ 대기 현황 불러오는 중...</div>
+  </div>
+  <div style="background:#fff9db;border:1px solid #fab005;border-radius:14px;padding:18px;margin-bottom:14px;">
+    <h6 class="fw-bold mb-2" style="font-size:.95rem;">🔩 시설보완 서비스 <span style="font-size:.75rem;font-weight:400;color:#888;">(선택 · 1~3만원 추가)</span></h6>
+    <div style="font-size:.83rem;color:#555;line-height:1.8;">
+      <div>▸ 유입 경로 시설 진단</div>
+      <div>▸ 고객에게 해결 방안 제시</div>
+      <div>▸ 테이핑·실리콘·문풍지 등 유입 경로 차단 <span style="color:#888;">(간단한 테이핑 무료)</span></div>
     </div>
-
-    <div class="p-4 bg-dark text-white rounded-4 mb-3 mt-3">
-        <div class="mb-3">
-            <span style="background:#e74c3c;color:white;font-size:0.68rem;font-weight:bold;padding:3px 10px;border-radius:20px;letter-spacing:0.5px;">PROFESSIONAL</span>
-        </div>
-        <h6 class="fw-bold mb-2" style="font-size:1rem;">🏢 검증된 전문 업체만 엄선합니다</h6>
-        <p class="small lh-lg opacity-85 mb-3">
-            저희 플랫폼의 대표는 방역 업계에서 오랜 현장 경력을 보유한 전문가입니다.
-            그 경험을 바탕으로 검증된 업체만을 엄격히 선별하여 서비스를 제공하고 있습니다.
-        </p>
-        <p class="small lh-lg opacity-75 mb-0">
-            단순 중개가 아닙니다. 전문성·신뢰도·고객 응대 수준까지 직접 확인하고
-            기준에 부합하는 파트너 업체와 함께합니다. 내 가족이 사는 공간이라는 마음으로,
-            최선의 서비스를 연결해 드릴 것을 약속드립니다.
-        </p>
-    </div>
-
-    <div style="background:#f8f9fa;border-radius:14px;padding:18px;margin-bottom:14px;border:1px solid #eee;">
-        <h6 class="fw-bold mb-3" style="font-size:0.95rem;color:#111;">🔧 기본 서비스 진행 순서</h6>
-        <div style="display:flex;flex-direction:column;gap:10px;">
-            <div style="display:flex;align-items:flex-start;gap:10px;">
-                <span style="background:#212529;color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:bold;flex-shrink:0;margin-top:1px;">1</span>
-                <p class="mb-0 small lh-lg" style="color:#333;">
-                    <b>내부 살충제 작업</b><br>
-                    배수구 · 싱크대 · 출입문 등 바퀴벌레 주요 서식·이동 경로에 전문 살충제를 처리합니다.
-                </p>
-            </div>
-            <div style="display:flex;align-items:flex-start;gap:10px;">
-                <span style="background:#212529;color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:bold;flex-shrink:0;margin-top:1px;">2</span>
-                <p class="mb-0 small lh-lg" style="color:#333;">
-                    <b>바퀴먹이제 투약</b><br>
-                    바퀴벌레가 발견된 주변부에 전용 베이트제(먹이제)를 투약하여 군집 박멸을 유도합니다.
-                </p>
-            </div>
-            <div style="display:flex;align-items:flex-start;gap:10px;">
-                <span style="background:#212529;color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:bold;flex-shrink:0;margin-top:1px;">3</span>
-                <p class="mb-0 small lh-lg" style="color:#333;">
-                    <b>모니터링 트랩 설치</b><br>
-                    가정 내 주요 위치에 바퀴 모니터링 트랩을 설치하여 잔존 개체 여부를 지속 확인합니다.
-                </p>
-            </div>
-            <div style="display:flex;align-items:flex-start;gap:10px;">
-                <span style="background:#e74c3c;color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:bold;flex-shrink:0;margin-top:1px;">✓</span>
-                <p class="mb-0 small lh-lg" style="color:#333;">
-                    <b>내부 서식 방지 · 기존 개체 박멸</b><br>
-                    위 과정을 통해 내부 서식 환경을 차단하고 기존 개체를 최대한 박멸합니다.
-                </p>
-            </div>
-        </div>
-    </div>
-
-    <div style="background:#fff9db;border:1px solid #fab005;border-radius:14px;padding:18px;margin-bottom:14px;">
-        <h6 class="fw-bold mb-3" style="font-size:0.95rem;color:#333;">🔩 시설보완 서비스 <span style="font-size:0.75rem;font-weight:normal;color:#888;">(선택 · 추가 비용 발생 가능)</span></h6>
-        <p class="small mb-3" style="color:#555;line-height:1.7;">
-            상황에 따라 선택적으로 진행하며, 자재 및 작업 범위에 따라
-            <b>1 ~ 3만원 내외의 추가 비용</b>이 발생할 수 있습니다.
-        </p>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-            <div style="display:flex;align-items:flex-start;gap:8px;">
-                <span style="color:#fab005;font-size:1rem;flex-shrink:0;">▸</span>
-                <p class="mb-0 small lh-lg" style="color:#444;">
-                    <b>유입 경로 시설 진단</b> — 바퀴벌레가 들어올 수 있는 구조적 취약점을 현장에서 직접 확인합니다.
-                </p>
-            </div>
-            <div style="display:flex;align-items:flex-start;gap:8px;">
-                <span style="color:#fab005;font-size:1rem;flex-shrink:0;">▸</span>
-                <p class="mb-0 small lh-lg" style="color:#444;">
-                    <b>해결 방안 제시</b> — 시설 문제가 확인되면 고객에게 구체적인 해결 방안을 안내합니다.
-                </p>
-            </div>
-            <div style="display:flex;align-items:flex-start;gap:8px;">
-                <span style="color:#fab005;font-size:1rem;flex-shrink:0;">▸</span>
-                <p class="mb-0 small lh-lg" style="color:#444;">
-                    <b>유입 경로 차단</b> — 테이핑 · 실리콘 · 문풍지 등을 활용해 구멍 막음 및 틈새를 차단합니다.<br>
-                    <span style="color:#888;">(간단한 테이핑 작업은 무료로 진행됩니다)</span>
-                </p>
-            </div>
-        </div>
-    </div>
-
-    <div class="notice-card">
-        <h6>📢 방역 전 필수 안내사항</h6>
-        <p>
-            • 바퀴벌레는 어디든 들어갈 수 있기 때문에 시야에 없는 경우 못 잡을 수도 있고
-            잡더라도 추가 개체가 추후에 발견될 수도 있습니다.<br><br>
-            • <b>작업을 받는다고 한 마리도 안 보인다는 의미는 아니며, 유입 경로 차단, 전용 약제 작업 등으로
-            최대한 덜 보이고 내부 서식을 못 하게 막는 작업이라고 이해하셔야 합니다.</b><br><br>
-            • 보통 1회 작업으로 개선이 되는 경우도 있지만 생각보다 개체가 너무 많거나
-            건물 문제가 심각한 경우 추가 작업이 필요할 수도 있습니다.
-        </p>
-    </div>
-
-    <div class="option-box">
-        <span class="small">
-            <b>💡 시설보완비 안내:</b> 간단한 테이핑은 무료이나 광범위한 실리콘, 문풍지, 배수구 트랩 등
-            자재가 들어가는 작업 시 시설보완비(1~3만원 추가)가 들어갈 수 있음을 안내드립니다.
-        </span>
-    </div>
-
-    <div class="btn-back-group">
-        <button class="btn btn-light w-100 btn-back" onclick="goTo('main')">뒤로가기</button>
-    </div>
+  </div>
+  <div class="rbox">
+    <h6>📢 방역 전 필수 안내사항</h6>
+    <p>• 바퀴벌레는 어디든 들어갈 수 있어 시야에 없는 경우 못 잡을 수도 있습니다.<br><br>
+    • <b>작업을 받는다고 한 마리도 안 보인다는 의미는 아니며, 유입 경로 차단, 전용 약제 작업 등으로 최대한 덜 보이고 내부 서식을 못 하게 막는 작업이라고 이해하셔야 합니다.</b><br><br>
+    • 개체가 너무 많거나 건물 문제가 심각한 경우 추가 작업이 필요할 수 있습니다.</p>
+  </div>
+  <button class="btn btn-light w-100 back-btn" onclick="goTo('main')">뒤로가기</button>
 </div>
 
-<!-- ════════════════════════════════
-     관리자 로그인
-════════════════════════════════ -->
-<div id="screen-admin-gate" class="screen" style="
-    background:#1a1a2e; min-height:100vh;
-    display:none; flex-direction:column; align-items:center; justify-content:center; padding:30px 24px;
-">
-    <h2 style="color:white;font-weight:900;font-size:1.4rem;margin-bottom:6px;">🔐 로그인</h2>
-    <p style="color:rgba(255,255,255,0.5);font-size:0.82rem;margin-bottom:30px;">관리자 또는 작업자 계정으로 로그인하세요</p>
-    <div class="admin-login-box">
-        <input type="text"     id="login-id" class="form-control" placeholder="아이디" autocomplete="username">
-        <input type="password" id="login-pw" class="form-control" placeholder="비밀번호" autocomplete="current-password">
-        <button class="btn-admin-login" onclick="unlockAudio(); doLogin()">로그인</button>
-        <hr style="border-color:rgba(255,255,255,0.1);margin:20px 0;">
-        <p style="color:rgba(255,255,255,0.5);font-size:0.8rem;text-align:center;margin-bottom:10px;">작업자 가입 신청</p>
-        <button class="btn btn-outline-light w-100" style="border-radius:12px;" onclick="goTo('register')">신규 가입 신청하기</button>
-    </div>
-    <button class="btn btn-link text-secondary mt-3" style="font-size:0.85rem;" onclick="goTo('main')">← 메인으로</button>
+<!-- 관리자 로그인 -->
+<div id="s-admin-gate" class="screen dark-pg">
+  <h2>🔐 로그인</h2>
+  <p>관리자 또는 작업자 계정으로 로그인하세요</p>
+  <div class="lbox">
+    <input type="text" id="login-id" placeholder="아이디" autocomplete="username">
+    <input type="password" id="login-pw" placeholder="비밀번호" autocomplete="current-password">
+    <button class="red-btn" onclick="unlockAudio();doLogin()">로그인</button>
+    <hr style="border-color:rgba(255,255,255,.1);margin:18px 0;">
+    <p style="color:rgba(255,255,255,.5);font-size:.8rem;text-align:center;margin-bottom:10px;">작업자 가입 신청</p>
+    <button class="btn btn-outline-light w-100" style="border-radius:12px;" onclick="goTo('register')">신규 가입 신청하기</button>
+  </div>
+  <button class="btn btn-link text-secondary mt-3" style="font-size:.85rem;" onclick="goTo('main')">← 메인으로</button>
 </div>
 
-<!-- ════════════════════════════════
-     가입 신청
-════════════════════════════════ -->
-<div id="screen-register" class="screen" style="
-    background:#1a1a2e; min-height:100vh;
-    display:none; flex-direction:column; align-items:center; justify-content:center; padding:30px 24px;
-">
-    <h2 style="color:white;font-weight:900;font-size:1.4rem;margin-bottom:6px;">📝 가입 신청</h2>
-    <p style="color:rgba(255,255,255,0.5);font-size:0.82rem;margin-bottom:30px;">관리자 승인 후 로그인 가능합니다</p>
-    <div class="admin-login-box">
-        <input type="text"     id="reg-name"  class="form-control" placeholder="이름 (실명)">
-        <input type="text"     id="reg-id"    class="form-control" placeholder="사용할 아이디">
-        <input type="password" id="reg-pw"    class="form-control" placeholder="비밀번호">
-        <input type="tel"      id="reg-phone" class="form-control" placeholder="연락처 (010-0000-0000)">
-        <input type="text"     id="reg-area"  class="form-control" placeholder="담당 지역 (예: 강남구, 서초구)">
-        <button class="btn-admin-login" onclick="submitRegister()">가입 신청하기</button>
-    </div>
-    <button class="btn btn-link text-secondary mt-3" style="font-size:0.85rem;" onclick="goTo('admin-gate')">← 로그인으로</button>
+<!-- 가입 신청 -->
+<div id="s-register" class="screen dark-pg">
+  <h2>📝 가입 신청</h2>
+  <p>관리자 승인 후 로그인 가능합니다</p>
+  <div class="lbox">
+    <input type="text" id="reg-name" placeholder="이름 (실명)">
+    <input type="text" id="reg-id" placeholder="사용할 아이디">
+    <input type="password" id="reg-pw" placeholder="비밀번호">
+    <input type="tel" id="reg-phone" placeholder="연락처 (010-0000-0000)">
+    <input type="text" id="reg-area" placeholder="담당 지역 (예: 강남구, 서초구)">
+    <button class="red-btn" onclick="submitRegister()">가입 신청하기</button>
+  </div>
+  <button class="btn btn-link text-secondary mt-3" style="font-size:.85rem;" onclick="goTo('admin-gate')">← 로그인으로</button>
 </div>
 
-<!-- ════════════════════════════════
-     관리자 패널
-════════════════════════════════ -->
-<div id="screen-admin-panel" class="screen" style="background:#f4f4f4;min-height:100vh;">
-
-    <!-- 탭 네비 -->
-    <div class="admin-tab-nav">
-        <div class="admin-tab active" data-tab="adm-dashboard" onclick="switchAdminTab('adm-dashboard')">📊 대시보드</div>
-        <div class="admin-tab" id="tab-call-btn" data-tab="adm-call" onclick="switchAdminTab('adm-call')">
-            🚨 실시간 콜
-            <span id="call-badge" style="
-                display:none; background:#e74c3c; color:white;
-                border-radius:50%; width:16px; height:16px; font-size:0.6rem;
-                font-weight:900; line-height:16px; text-align:center;
-                margin-left:4px; vertical-align:middle;
-            ">N</span>
-        </div>
-        <div class="admin-tab"        data-tab="adm-bookings"  onclick="switchAdminTab('adm-bookings')">📋 예약관리</div>
-        <div class="admin-tab"        data-tab="adm-workers"   onclick="switchAdminTab('adm-workers')">👷 작업자</div>
-        <div class="admin-tab master-tab" data-tab="adm-members" onclick="switchAdminTab('adm-members')" style="display:none;">👥 회원관리</div>
+<!-- 관리자 패널 -->
+<div id="s-admin" class="screen">
+  <div class="anav">
+    <div class="atab" data-tab="t-dash" onclick="showTab('t-dash')">📊 대시보드</div>
+    <div class="atab on" data-tab="t-call" onclick="showTab('t-call')">
+      🚨 실시간콜 <span class="cbadge" id="call-badge">0</span>
     </div>
+    <div class="atab" data-tab="t-bk" onclick="showTab('t-bk')">📋 예약관리</div>
+    <div class="atab" data-tab="t-wk" onclick="showTab('t-wk')">👷 작업자</div>
+    <div class="atab master-tab" data-tab="t-mem" onclick="showTab('t-mem')" style="display:none;">👥 회원관리</div>
+  </div>
 
-    <!-- 대시보드 -->
-    <div id="adm-dashboard" class="admin-tab-content active">
-        <div class="stat-grid">
-            <div class="stat-card"><div class="stat-num" id="stat-today">-</div><div class="stat-label">오늘 예약</div></div>
-            <div class="stat-card"><div class="stat-num" id="stat-pending">-</div><div class="stat-label">접수 대기</div></div>
-            <div class="stat-card"><div class="stat-num" id="stat-ready">-</div><div class="stat-label">출동 가능</div></div>
-            <div class="stat-card"><div class="stat-num" id="stat-total">-</div><div class="stat-label">전체 예약</div></div>
-        </div>
-        <div class="sec-head fw-bold">🔔 최근 예약 5건</div>
-        <div id="dash-recent"></div>
-        <hr>
-        <button class="btn btn-outline-danger w-100" style="border-radius:12px;padding:14px;font-weight:bold;" onclick="doLogout()">로그아웃</button>
+  <!-- 대시보드 -->
+  <div id="t-dash" class="apg">
+    <div class="sg">
+      <div class="sc"><div class="sn" id="st-today">-</div><div class="sl">오늘 예약</div></div>
+      <div class="sc"><div class="sn" id="st-pend">-</div><div class="sl">접수 대기</div></div>
+      <div class="sc"><div class="sn" id="st-ready">-</div><div class="sl">출동 가능</div></div>
+      <div class="sc"><div class="sn" id="st-total">-</div><div class="sl">전체 예약</div></div>
     </div>
+    <div style="font-weight:700;font-size:.9rem;margin-bottom:10px;">🔔 최근 예약 5건</div>
+    <div id="dash-list"></div>
+    <hr>
+    <button class="btn btn-outline-danger w-100" style="border-radius:12px;padding:14px;font-weight:700;" onclick="doLogout()">로그아웃</button>
+  </div>
 
-    <!-- 실시간 콜 탭 -->
-    <div id="adm-call" class="admin-tab-content" style="padding:0;">
-
-        <!-- 내 상태 카드 -->
-        <div id="my-status-card" style="
-            background:linear-gradient(135deg,#1a1a2e,#16213e);
-            padding:18px 16px 14px; color:white;
-        ">
-            <div style="font-size:0.75rem;opacity:0.6;margin-bottom:6px;">내 현재 상태</div>
-            <div id="my-status-label" style="font-size:1.1rem;font-weight:900;margin-bottom:12px;">⏳ 로딩중...</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button class="ws-btn" data-st="대기중" onclick="unlockAudio(); setMyStatus('대기중')" style="background:#27ae60;">🟢 대기중</button>
-                <button class="ws-btn" data-st="이동중" onclick="setMyStatus('이동중')" style="background:#f39c12;">🚗 이동중</button>
-                <button class="ws-btn" data-st="작업중" onclick="setMyStatus('작업중')" style="background:#e74c3c;">🔴 작업중</button>
-                <button class="ws-btn" data-st="퇴근"   onclick="setMyStatus('퇴근')"   style="background:#555;">⚫ 퇴근</button>
-            </div>
-        </div>
-
-        <!-- 접수 대기 콜 목록 -->
-        <div style="padding:12px 12px 4px;">
-            <div style="font-size:0.78rem;color:#999;font-weight:bold;letter-spacing:0.5px;">
-                🚨 접수 대기 중인 콜 <span id="pending-count" style="color:#e74c3c;"></span>
-            </div>
-        </div>
-        <div id="call-list" style="padding:0 12px 12px;">
-            <div class="loading">⏳ 실시간 콜 불러오는 중...</div>
-        </div>
-
-        <!-- 내 수락 기록 -->
-        <div style="padding:4px 12px 4px;margin-top:4px;border-top:1px solid #eee;">
-            <div style="font-size:0.78rem;color:#999;font-weight:bold;letter-spacing:0.5px;padding:8px 0 6px;">
-                📋 내가 수락한 콜 기록 <span id="my-call-count" style="color:#27ae60;"></span>
-            </div>
-        </div>
-        <div id="my-call-list" style="padding:0 12px 100px;">
-            <div style="text-align:center;padding:20px;color:#ccc;font-size:0.82rem;">수락한 콜이 없습니다</div>
-        </div>
+  <!-- 실시간 콜 -->
+  <div id="t-call" class="apg on" style="padding:0;overflow-y:auto;">
+    <div class="st-bar">
+      <div style="font-size:.75rem;opacity:.6;margin-bottom:6px;">내 현재 상태</div>
+      <div id="my-st-label" style="font-size:1rem;font-weight:900;margin-bottom:12px;">⏳ 로딩중...</div>
+      <div>
+        <button class="ws-btn" data-st="대기중" onclick="setMyStatus('대기중')" style="background:#27ae60;">🟢 대기중</button>
+        <button class="ws-btn" data-st="이동중" onclick="setMyStatus('이동중')" style="background:#f39c12;">🚗 이동중</button>
+        <button class="ws-btn" data-st="작업중" onclick="setMyStatus('작업중')" style="background:#e74c3c;">🔴 작업중</button>
+        <button class="ws-btn" data-st="퇴근" onclick="setMyStatus('퇴근')" style="background:#555;">⚫ 퇴근</button>
+      </div>
     </div>
-
-    <!-- 예약 관리 -->
-    <div id="adm-bookings" class="admin-tab-content">
-        <div class="d-flex gap-2 mb-3 overflow-auto pb-1" style="-webkit-overflow-scrolling:touch;">
-            <button class="btn btn-sm btn-dark" style="border-radius:20px;white-space:nowrap;" onclick="filterBk('')">전체</button>
-            <button class="btn btn-sm btn-outline-warning" style="border-radius:20px;white-space:nowrap;" onclick="filterBk('접수중')">접수중</button>
-            <button class="btn btn-sm btn-outline-info" style="border-radius:20px;white-space:nowrap;" onclick="filterBk('배정완료')">배정완료</button>
-            <button class="btn btn-sm btn-outline-secondary" style="border-radius:20px;white-space:nowrap;" onclick="filterBk('출동중')">출동중</button>
-            <button class="btn btn-sm btn-outline-success" style="border-radius:20px;white-space:nowrap;" onclick="filterBk('완료')">완료</button>
-        </div>
-        <div id="bk-list"><div class="loading">⏳ 불러오는 중...</div></div>
+    <div style="padding:10px 14px 4px;font-size:.78rem;color:#999;font-weight:700;">
+      🚨 접수 대기 중인 콜 <span id="pend-cnt" style="color:#e74c3c;"></span>
     </div>
-
-    <!-- 작업자 현황 -->
-    <div id="adm-workers" class="admin-tab-content">
-        <div id="wk-list"><div class="loading">⏳ 불러오는 중...</div></div>
+    <div id="call-list" style="padding:0 14px 12px;"></div>
+    <div style="padding:4px 14px 4px;border-top:1px solid #eee;font-size:.78rem;color:#999;font-weight:700;">
+      📋 내가 수락한 콜 <span id="my-cnt" style="color:#27ae60;"></span>
     </div>
+    <div id="my-call-list" style="padding:0 14px 80px;"></div>
+  </div>
 
-    <!-- 회원 관리 (마스터) -->
-    <div id="adm-members" class="admin-tab-content">
-        <div class="sec-head fw-bold mb-3">⏳ 승인 대기</div>
-        <div id="mem-pending"></div>
-        <hr style="margin:20px 0;">
-        <div class="sec-head fw-bold mb-3">✅ 승인된 회원</div>
-        <div id="mem-approved"></div>
+  <!-- 예약관리 -->
+  <div id="t-bk" class="apg">
+    <div class="d-flex gap-2 mb-3 overflow-auto pb-1">
+      <button class="btn btn-sm btn-dark" style="border-radius:20px;white-space:nowrap;" onclick="filterBk('')">전체</button>
+      <button class="btn btn-sm btn-outline-warning" style="border-radius:20px;white-space:nowrap;" onclick="filterBk('접수중')">접수중</button>
+      <button class="btn btn-sm btn-outline-info" style="border-radius:20px;white-space:nowrap;" onclick="filterBk('배정완료')">배정완료</button>
+      <button class="btn btn-sm btn-outline-secondary" style="border-radius:20px;white-space:nowrap;" onclick="filterBk('출동중')">출동중</button>
+      <button class="btn btn-sm btn-outline-success" style="border-radius:20px;white-space:nowrap;" onclick="filterBk('완료')">완료</button>
     </div>
+    <div id="bk-list"><div class="load">⏳ 불러오는 중...</div></div>
+  </div>
+
+  <!-- 작업자 -->
+  <div id="t-wk" class="apg">
+    <div id="wk-list"><div class="load">⏳ 불러오는 중...</div></div>
+  </div>
+
+  <!-- 회원관리 -->
+  <div id="t-mem" class="apg">
+    <div style="font-weight:700;font-size:.9rem;margin-bottom:10px;">⏳ 승인 대기</div>
+    <div id="mem-pend"></div>
+    <hr style="margin:16px 0;">
+    <div style="font-weight:700;font-size:.9rem;margin-bottom:10px;">✅ 승인된 회원</div>
+    <div id="mem-appr"></div>
+  </div>
 </div>
 
-<!-- ════════════════════════════════
-     Firebase + 앱 로직
-════════════════════════════════ -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
-/* ── Firebase 초기화 ── */
-const app = firebase.initializeApp({
-    apiKey: "AIzaSyAHU0tia2PKucx8rhXZ6D6R8OtLf5bMLEk",
-    authDomain: "cockroach-a8822.firebaseapp.com",
-    databaseURL: "https://cockroach-a8822-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "cockroach-a8822",
-    storageBucket: "cockroach-a8822.firebasestorage.app",
-    messagingSenderId: "811643267338",
-    appId: "1:811643267338:web:bc72a1103574eb6462f2f3",
-    measurementId: "G-9WX5LW5JZX"
+firebase.initializeApp({
+  apiKey:"AIzaSyAHU0tia2PKucx8rhXZ6D6R8OtLf5bMLEk",
+  authDomain:"cockroach-a8822.firebaseapp.com",
+  databaseURL:"https://cockroach-a8822-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"cockroach-a8822",
+  storageBucket:"cockroach-a8822.firebasestorage.app",
+  messagingSenderId:"811643267338",
+  appId:"1:811643267338:web:bc72a1103574eb6462f2f3"
 });
-const db = firebase.database();
+var DB = firebase.database();
 
-/* ── compat 방식 함수 래퍼 ── */
-function ref(db, path) { return db.ref(path); }
-function push(refObj, data) {
-    return new Promise(function(resolve, reject) {
-        var newRef = refObj.push(data, function(err) {
-            if (err) reject(err); else resolve(newRef);
-        });
-    });
-}
-function set(refObj, data) { return refObj.set(data); }
-function update(refObj, data) { return refObj.update(data); }
-function get(refObj) { return refObj.once('value'); }
-function onValue(refObj, cb) {
-    refObj.on('value', cb);
-    return function() { refObj.off('value', cb); };
-}
+// 전역
+var CU=null, ALL_BK=[], BK_FILTER='';
+var UBK=null, UWK=null, UAL=null;
+var CALL_TMR=null, AL_TMR=null;
+var PEND={}, LAST_CNT=-1, AUDIO=null;
 
-/* ── 전역 상태 ── */
-let currentUser = null;
-let allBookings = [];
-let bkFilter    = '';
-let unsubBk     = null;
-let unsubWk     = null;
-let unsubCall   = null;
-let callAlarmTimer = null;
-let pendingCallKeys = new Set();
+// 마스터 초기화
+DB.ref('users/master').once('value',function(s){
+  if(!s.exists()) DB.ref('users/master').set({
+    id:'master',name:'마스터관리자',password:'master1234',
+    role:'master',status:'approved',phone:'',area:'전지역',
+    workerStatus:'대기중',createdAt:Date.now()
+  });
+});
 
-/* ═══════════════ 마스터 계정 초기화 ═══════════════ */
-(async () => {
-    const snap = await get(ref(db, 'users/master'));
-    if (!snap.exists()) {
-        await set(ref(db, 'users/master'), {
-            id: 'master', name: '마스터관리자',
-            password: 'master1234',          // ← 운영 전 반드시 변경!
-            role: 'master', status: 'approved',
-            phone: '', area: '전지역',
-            workerStatus: '대기중',
-            createdAt: Date.now()
-        });
-    }
-})();
-
-/* ═══════════════ 화면 전환 ═══════════════ */
-const SCREEN_MAP = {
-    'main'         : 'screen-main',
-    'booking'      : 'screen-booking',
-    'price'        : 'screen-price',
-    'my-booking'   : 'screen-my-booking',
-    'about'        : 'screen-about',
-    'admin-gate'   : 'screen-admin-gate',
-    'register'     : 'screen-register',
-    'admin-panel'  : 'screen-admin-panel',
-};
-
-window.goTo = function(key) {
-    // 관리자 패널 진입 시 로그인 체크
-    if (key === 'admin-panel' && !currentUser) { goTo('admin-gate'); return; }
-
-    // 모든 screen 숨김
-    document.querySelectorAll('[id^="screen-"]').forEach(el => {
-        el.classList.remove('active');
-        el.style.display = 'none';
-    });
-
-    const id = SCREEN_MAP[key] || ('screen-' + key);
-    const el = document.getElementById(id);
-    if (!el) { console.warn('화면 없음:', id); return; }
-
-    // flex가 필요한 화면들
-    const flexScreens = ['screen-main','screen-admin-gate','screen-register'];
-    el.style.display = flexScreens.includes(id) ? 'flex' : 'block';
-    el.classList.add('active');
-    window.scrollTo(0, 0);
-
-    // 메인화면 스크롤 고정
-    if (key === 'main') {
-        document.body.classList.add('main-active');
-    } else {
-        document.body.classList.remove('main-active');
-    }
-
-    // 서비스소개 → 작업자 실시간 로드
-    if (key === 'about') loadPublicWorkers();
-    // 관리자 패널 → 리스너 시작
-    if (key === 'admin-panel') {
-        startAdminListeners();
-        // 내 상태 카드 렌더링 (약간 딜레이)
-        setTimeout(() => {
-            if (currentUser) renderMyStatusCard(currentUser.workerStatus || '대기중');
-        }, 300);
-    }
-};
-
-/* ═══════════════ 토스트 ═══════════════ */
-window.showToast = function(msg) {
-    const el = document.getElementById('toast');
-    el.textContent = msg; el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), 2600);
-};
-
-/* ═══════════════ 예약 신청 ═══════════════ */
-window.submitBooking = async function() {
-    const name     = document.getElementById('bk-name').value.trim();
-    const phone    = document.getElementById('bk-phone').value.trim();
-    const address  = document.getElementById('bk-address').value.trim();
-    const size     = document.getElementById('bk-size').value;
-    const facility = document.getElementById('bk-facility').checked;
-    const memo     = document.getElementById('bk-memo').value.trim();
-
-    if (!name)    return showToast('이름을 입력해 주세요.');
-    if (!phone)   return showToast('연락처를 입력해 주세요.');
-    if (!address) return showToast('주소를 입력해 주세요.');
-
-    try {
-        const now = new Date();
-        await push(ref(db, 'bookings'), {
-            name, phone, address, size,
-            facilityRequest: facility,
-            memo,
-            status: '접수중',
-            createdAt: Date.now(),
-            dateStr: now.toLocaleString('ko-KR')
-        });
-        showToast('✅ 예약이 접수되었습니다!');
-        ['bk-name','bk-phone','bk-address','bk-memo'].forEach(id => document.getElementById(id).value = '');
-        document.getElementById('bk-facility').checked = false;
-        // 알람 노드 저장 (작업자 알람용)
-        await push(ref(db, 'alerts'), {
-            type: 'new_booking', name, phone, address, size,
-            createdAt: Date.now(), read: false
-        });
-        goTo('my-booking');
-        document.getElementById('search-phone').value = phone;
-        setTimeout(loadMyBookings, 400);
-    } catch(e) {
-        showToast('오류: ' + e.message);
-    }
-};
-
-/* ═══════════════ 내 예약 조회 ═══════════════ */
-window.loadMyBookings = async function() {
-    const phone = document.getElementById('search-phone').value.trim();
-    if (!phone) return showToast('연락처를 입력하세요.');
-    const listEl = document.getElementById('my-booking-list');
-    listEl.innerHTML = '<div class="loading">⏳ 조회 중...</div>';
-
-    const snap = await get(ref(db, 'bookings'));
-    const results = [];
-    if (snap.exists()) {
-        snap.forEach(child => {
-            const d = child.val();
-            if (d.phone === phone) results.push({ id: child.key, ...d });
-        });
-    }
-    results.sort((a,b) => b.createdAt - a.createdAt);
-
-    if (!results.length) {
-        listEl.innerHTML = '<div class="empty"><div class="ei">📭</div><p>해당 연락처로 예약된 내역이 없습니다</p></div>';
-        return;
-    }
-    listEl.innerHTML = results.map(b => {
-        const matched = b.status === '배정완료' || b.status === '출동중';
-        return `
-        <div class="booking-card-item">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <div>
-                    <strong>${b.name}</strong>
-                    <span class="text-muted small ms-1">· ${b.size}</span>
-                </div>
-                <span class="status-badge badge-${b.status}">${b.status}</span>
-            </div>
-            <p class="small text-secondary mb-1">📍 ${b.address}</p>
-            ${b.facilityRequest ? '<p class="small text-primary fw-bold mb-1">✅ 시설보완 작업 요청됨</p>' : ''}
-            ${b.memo ? `<p class="small text-muted mb-1">📝 ${b.memo}</p>` : ''}
-            <p class="small text-muted mb-0" style="font-size:0.72rem;">${b.dateStr || ''}</p>
-            ${matched && b.workerName ? `
-                <div style="background:#e8f5e9;border-radius:10px;padding:10px;margin-top:8px;">
-                    <p class="small mb-1 fw-bold text-success">✅ 작업자 매칭 완료</p>
-                    <p class="small mb-1">👷 담당: <b>${b.workerName}</b></p>
-                    ${b.workerPhone ? `<a href="tel:${b.workerPhone}" style="display:inline-block;background:#212529;color:white;border-radius:8px;padding:6px 14px;font-size:0.8rem;font-weight:bold;text-decoration:none;">📞 작업자에게 전화하기</a>` : ''}
-                </div>` : ''}
-            ${!matched ? '<p class="small text-muted mt-1">📞 작업자 매칭 후 연락처가 공개됩니다</p>' : ''}
-        </div>`;
-    }).join('');
-};
-
-/* ═══════════════ 공개 작업자 현황 ═══════════════ */
-// 상태별 색상/아이콘
-window.workerStatusStyle = function workerStatusStyle(st) {
-    const map = {
-        '대기중': { dot: 'dot-ready', cls: 'text-success',   label: '🟢 대기중' },
-        '이동중': { dot: 'dot-busy',  cls: 'text-warning',   label: '🚗 이동중' },
-        '작업중': { dot: 'dot-busy',  cls: 'text-danger',    label: '🔴 작업중' },
-        '퇴근':   { dot: 'dot-off',   cls: 'text-secondary', label: '⚫ 퇴근'   },
-    };
-    return map[st] || map['대기중'];
+// 화면전환
+function goTo(key){
+  if(key==='admin-panel'&&!CU){goTo('admin-gate');return;}
+  var map={'main':'s-main','booking':'s-booking','price':'s-price',
+    'my-booking':'s-my-booking','about':'s-about',
+    'admin-gate':'s-admin-gate','register':'s-register','admin-panel':'s-admin'};
+  document.querySelectorAll('.screen,.pg,.dark-pg').forEach(function(el){
+    el.classList.remove('active'); el.style.display='';
+  });
+  var id=map[key]||('s-'+key);
+  var el=document.getElementById(id);
+  if(!el) return;
+  el.classList.add('active');
+  window.scrollTo(0,0);
+  if(key==='main') document.body.classList.add('locked');
+  else document.body.classList.remove('locked');
+  if(key==='about') loadPubWorkers();
+  if(key==='admin-panel'){
+    startListeners();
+    setTimeout(function(){
+      renderStCard(CU?CU.workerStatus||'대기중':'대기중');
+    },200);
+  }
 }
 
-window.loadPublicWorkers = function() {
-    const listEl = document.getElementById('public-worker-list');
-    onValue(ref(db, 'users'), snap => {
-        const workers = [];
-        if (snap.exists()) {
-            snap.forEach(child => {
-                const d = child.val();
-                // 마스터 제외, worker/admin만 표시
-                if ((d.role === 'worker' || d.role === 'admin') && d.status === 'approved')
-                    workers.push(d);
-            });
-        }
-        if (!workers.length) {
-            listEl.innerHTML = '<div class="empty"><p>현재 등록된 작업자가 없습니다</p></div>';
-            return;
-        }
-        listEl.innerHTML = workers.map(w => {
-            const ss = workerStatusStyle(w.workerStatus);
-            return `
-            <div class="worker-public">
-                <div>
-                    <div class="fw-bold" style="font-size:0.9rem;">
-                        <span class="status-dot ${ss.dot}"></span>
-                        ${w.name}
-                    </div>
-                    <div class="small fw-bold ${ss.cls}">${ss.label} / ${w.area || '전지역'}</div>
-                </div>
-            </div>`;
-        }).join('');
+// 토스트
+function toast(msg){
+  var el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(function(){el.classList.remove('show');},2600);
+}
+
+// 오디오
+function unlockAudio(){
+  if(AUDIO) return;
+  try{
+    AUDIO=new(window.AudioContext||window.webkitAudioContext)();
+    var b=AUDIO.createBuffer(1,1,22050);
+    var s=AUDIO.createBufferSource();
+    s.buffer=b; s.connect(AUDIO.destination); s.start(0);
+  }catch(e){}
+}
+function playSound(){
+  try{
+    if(!AUDIO) AUDIO=new(window.AudioContext||window.webkitAudioContext)();
+    if(AUDIO.state==='suspended') AUDIO.resume();
+    var ctx=AUDIO;
+    [[1200,0],[900,0],[1200,.25],[900,.25],[1200,.5],[900,.5]].forEach(function(p){
+      var o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type='square';
+      o.frequency.setValueAtTime(p[0],ctx.currentTime+p[1]);
+      g.gain.setValueAtTime(0.6,ctx.currentTime+p[1]);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+p[1]+0.15);
+      o.start(ctx.currentTime+p[1]); o.stop(ctx.currentTime+p[1]+0.18);
     });
-};
+    if(navigator.vibrate) navigator.vibrate([400,150,400,150,400]);
+  }catch(e){}
+}
+function canAlarm(){
+  if(!CU) return false;
+  return (CU.workerStatus||'대기중')==='대기중';
+}
 
-/* ═══════════════ 로그인 ═══════════════ */
-window.doLogin = async function() {
-    const id = document.getElementById('login-id').value.trim();
-    const pw = document.getElementById('login-pw').value.trim();
-    if (!id || !pw) return showToast('아이디와 비밀번호를 입력하세요.');
+// 배너
+function showBanner(title,body){
+  var ex=document.getElementById('alarm-banner');
+  if(ex) ex.remove();
+  var d=document.createElement('div');
+  d.id='alarm-banner';
+  d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;padding:16px 20px 14px;box-shadow:0 4px 20px rgba(0,0,0,.4);animation:slideDown .3s ease;';
+  d.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;">'
+    +'<div><div style="font-weight:900;font-size:1rem;margin-bottom:4px;">🔔 '+title+'</div>'
+    +'<div style="font-size:.82rem;opacity:.92;">'+body+'</div></div>'
+    +'<button onclick="dismissBanner()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:.8rem;cursor:pointer;margin-left:10px;flex-shrink:0;">확인</button>'
+    +'</div>';
+  document.body.appendChild(d);
+  playSound();
+  if(AL_TMR) clearInterval(AL_TMR);
+  AL_TMR=setInterval(function(){playSound();},5000);
+}
+function dismissBanner(){
+  var el=document.getElementById('alarm-banner');
+  if(el) el.remove();
+  if(AL_TMR){clearInterval(AL_TMR);AL_TMR=null;}
+}
 
-    const snap = await get(ref(db, 'users'));
-    if (!snap.exists()) return showToast('등록된 계정이 없습니다.');
+// 예약 신청
+function submitBooking(){
+  var name=document.getElementById('bk-name').value.trim();
+  var phone=document.getElementById('bk-phone').value.trim();
+  var addr=document.getElementById('bk-address').value.trim();
+  var size=document.getElementById('bk-size').value;
+  var fac=document.getElementById('bk-fac').checked;
+  var memo=document.getElementById('bk-memo').value.trim();
+  if(!name) return toast('이름을 입력하세요.');
+  if(!phone) return toast('연락처를 입력하세요.');
+  if(!addr) return toast('주소를 입력하세요.');
+  DB.ref('bookings').push({
+    name:name,phone:phone,address:addr,size:size,
+    facilityRequest:fac,memo:memo,status:'접수중',
+    createdAt:Date.now(),dateStr:new Date().toLocaleString('ko-KR')
+  },function(err){
+    if(err) return toast('오류: '+err.message);
+    DB.ref('alerts').push({type:'new_booking',name:name,phone:phone,address:addr,size:size,createdAt:Date.now()});
+    toast('✅ 예약이 접수되었습니다!');
+    ['bk-name','bk-phone','bk-address','bk-memo'].forEach(function(id){document.getElementById(id).value='';});
+    document.getElementById('bk-fac').checked=false;
+    goTo('my-booking');
+    document.getElementById('srch-phone').value=phone;
+    setTimeout(loadMyBk,400);
+  });
+}
 
-    let found = null;
-    snap.forEach(child => {
-        const d = child.val();
-        if (d.id === id && d.password === pw) found = { key: child.key, ...d };
+// 내 예약 조회
+function loadMyBk(){
+  var phone=document.getElementById('srch-phone').value.trim();
+  if(!phone) return toast('연락처를 입력하세요.');
+  var el=document.getElementById('my-bk-list');
+  el.innerHTML='<div class="load">⏳ 조회 중...</div>';
+  DB.ref('bookings').once('value',function(snap){
+    var res=[];
+    if(snap.exists()) snap.forEach(function(c){
+      var d=c.val(); if(d.phone===phone) res.push(Object.assign({id:c.key},d));
     });
-
-    if (!found)                    return showToast('아이디 또는 비밀번호가 틀렸습니다.');
-    if (found.status === 'pending') return showToast('승인 대기 중입니다. 관리자 승인 후 이용 가능합니다.');
-    if (found.status === 'rejected')return showToast('사용이 제한된 계정입니다.');
-
-    currentUser = found;
-    // 마스터 탭 표시
-    document.querySelectorAll('.master-tab').forEach(el => {
-        el.style.display = (found.role === 'master') ? 'block' : 'none';
+    res.sort(function(a,b){return b.createdAt-a.createdAt;});
+    if(!res.length){el.innerHTML='<div class="empty"><div class="ei">📭</div><p>예약 내역이 없습니다</p></div>';return;}
+    var html='';
+    res.forEach(function(b){
+      var matched=b.status==='배정완료'||b.status==='출동중';
+      html+='<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.05);">'
+        +'<div class="d-flex justify-content-between align-items-start mb-2">'
+        +'<div><strong>'+b.name+'</strong> <span class="text-muted small">· '+b.size+'</span></div>'
+        +'<span class="st-b st-'+b.status+'">'+b.status+'</span></div>'
+        +'<p class="small text-secondary mb-1">📍 '+b.address+'</p>'
+        +(b.facilityRequest?'<p class="small text-primary fw-bold mb-1">✅ 시설보완 요청</p>':'')
+        +(b.memo?'<p class="small text-muted mb-1">📝 '+b.memo+'</p>':'')
+        +'<p class="small text-muted mb-0" style="font-size:.72rem;">'+(b.dateStr||'')+'</p>';
+      if(matched&&b.workerName){
+        html+='<div style="background:#e8f5e9;border-radius:10px;padding:10px;margin-top:8px;">'
+          +'<p class="small mb-1 fw-bold text-success">✅ 작업자 매칭 완료</p>'
+          +'<p class="small mb-1">👷 담당: <b>'+b.workerName+'</b></p>'
+          +(b.workerPhone?'<a href="tel:'+b.workerPhone+'" style="display:inline-block;background:#212529;color:#fff;border-radius:8px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;">📞 작업자 전화</a>':'')
+          +'</div>';
+      } else if(!matched){
+        html+='<p class="small text-muted mt-1">📞 매칭 후 연락처 공개</p>';
+      }
+      html+='</div>';
     });
-    showToast(`환영합니다, ${found.name}님!`);
+    el.innerHTML=html;
+  });
+}
+
+// 공개 작업자
+function loadPubWorkers(){
+  var el=document.getElementById('pub-wk-list');
+  DB.ref('users').on('value',function(snap){
+    var wk=[];
+    if(snap.exists()) snap.forEach(function(c){
+      var d=c.val();
+      if((d.role==='worker'||d.role==='admin')&&d.status==='approved') wk.push(d);
+    });
+    if(!wk.length){el.innerHTML='<div class="empty"><p>등록된 작업자 없음</p></div>';return;}
+    var sm={'대기중':'dot-g','이동중':'dot-r','작업중':'dot-r','퇴근':'dot-x'};
+    var lm={'대기중':'🟢 대기중','이동중':'🚗 이동중','작업중':'🔴 작업중','퇴근':'⚫ 퇴근'};
+    var html='';
+    wk.forEach(function(w){
+      var st=w.workerStatus||'대기중';
+      html+='<div class="w-pub"><div>'
+        +'<div class="fw-bold" style="font-size:.9rem;"><span class="dot '+(sm[st]||'dot-x')+'"></span>'+w.name+'</div>'
+        +'<div class="small fw-bold '+(st==='대기중'?'text-success':'text-secondary')+'">'+(lm[st]||st)+' / '+(w.area||'전지역')+'</div>'
+        +'</div>'+(w.phone?'<a href="tel:'+w.phone+'" class="cbtn">📞 전화하기</a>':'')+'</div>';
+    });
+    el.innerHTML=html;
+  });
+}
+
+// 로그인
+function doLogin(){
+  var id=document.getElementById('login-id').value.trim();
+  var pw=document.getElementById('login-pw').value.trim();
+  if(!id||!pw) return toast('아이디와 비밀번호를 입력하세요.');
+  DB.ref('users').once('value',function(snap){
+    if(!snap.exists()) return toast('등록된 계정이 없습니다.');
+    var found=null;
+    snap.forEach(function(c){
+      var d=c.val();
+      if(d.id===id&&d.password===pw) found=Object.assign({key:c.key},d);
+    });
+    if(!found) return toast('아이디 또는 비밀번호가 틀렸습니다.');
+    if(found.status==='pending') return toast('승인 대기 중입니다.');
+    if(found.status==='rejected') return toast('사용이 제한된 계정입니다.');
+    CU=found;
+    document.querySelectorAll('.master-tab').forEach(function(el){
+      el.style.display=found.role==='master'?'block':'none';
+    });
+    toast('환영합니다, '+found.name+'님!');
     goTo('admin-panel');
-    // 로그인 직후 명시적으로 리스너 시작 + 상태카드 렌더
-    startAdminListeners();
-    setTimeout(() => {
-        renderMyStatusCard(found.workerStatus || '대기중');
-        switchAdminTab('adm-call'); // 로그인 후 실시간 콜 탭으로
-    }, 200);
-};
-
-/* ═══════════════ 로그아웃 ═══════════════ */
-window.doLogout = function() {
-    currentUser = null;
-    if (unsubBk)    { unsubBk();    unsubBk    = null; }
-    if (unsubWk)    { unsubWk();    unsubWk    = null; }
-    if (unsubAlert) { unsubAlert(); unsubAlert = null; }
-    if (unsubCall)  { unsubCall();  unsubCall  = null; }
-    if (alertSoundInterval) { clearInterval(alertSoundInterval); alertSoundInterval = null; }
-    if (callAlarmTimer)     { clearInterval(callAlarmTimer);     callAlarmTimer     = null; }
-    pendingCallKeys.clear();
-    dismissAlert();
-    lastBookingCount = -1;
-    goTo('main');
-    showToast('로그아웃 되었습니다.');
-};
-
-/* ═══════════════ 가입 신청 ═══════════════ */
-window.submitRegister = async function() {
-    const name  = document.getElementById('reg-name').value.trim();
-    const id    = document.getElementById('reg-id').value.trim();
-    const pw    = document.getElementById('reg-pw').value.trim();
-    const phone = document.getElementById('reg-phone').value.trim();
-    const area  = document.getElementById('reg-area').value.trim();
-
-    if (!name || !id || !pw || !phone) return showToast('모든 필수 항목을 입력하세요.');
-
-    // 중복 아이디 확인
-    const snap = await get(ref(db, 'users'));
-    if (snap.exists()) {
-        let dup = false;
-        snap.forEach(c => { if (c.val().id === id) dup = true; });
-        if (dup) return showToast('이미 사용 중인 아이디입니다.');
-    }
-
-    await push(ref(db, 'users'), {
-        id, name, password: pw, phone, area,
-        role: 'worker', status: 'pending',
-        workerStatus: '대기중', createdAt: Date.now()
-    });
-    showToast('✅ 가입 신청 완료! 관리자 승인을 기다려주세요.');
-    ['reg-name','reg-id','reg-pw','reg-phone','reg-area'].forEach(i => document.getElementById(i).value = '');
-    goTo('admin-gate');
-};
-
-/* ═══════════════ 관리자 탭 전환 ═══════════════ */
-window.switchAdminTab = function(tabId) {
-    document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.admin-tab').forEach(el => el.classList.remove('active'));
-    const content = document.getElementById(tabId);
-    if (content) content.classList.add('active');
-    const tab = document.querySelector(`[data-tab="${tabId}"]`);
-    if (tab) tab.classList.add('active');
-};
-
-/* ═══════════════ 관리자 리스너 ═══════════════ */
-let lastBookingCount = -1;
-let unsubAlert = null;
-let alertInitDone = false; // 최초 로드 기존 알람 무시
-
-window.startAdminListeners = function() {
-    if (!unsubBk) {
-        unsubBk = onValue(ref(db, 'bookings'), snap => {
-            allBookings = [];
-            if (snap.exists()) snap.forEach(c => allBookings.push({ id: c.key, ...c.val() }));
-            allBookings.sort((a,b) => b.createdAt - a.createdAt);
-
-            // 새 예약 알람
-            if (lastBookingCount >= 0 && allBookings.length > lastBookingCount) {
-                const newest = allBookings[0];
-                triggerAlert('📋 새 예약 접수!', `${newest.name} · ${newest.size} · ${newest.address}`);
-            }
-            lastBookingCount = allBookings.length;
-            renderBookings();
-            renderDashboard();
-            // ── 내 수락 기록도 함께 갱신 ──
-            if (currentUser) {
-                const myCalls = allBookings.filter(b =>
-                    b.acceptedBy === currentUser.id ||
-                    b.workerName === currentUser.name ||
-                    b.acceptedBy === currentUser.key
-                );
-                myCalls.sort((a,b) =>
-                    (b.acceptedAt||b.createdAt) - (a.acceptedAt||a.createdAt)
-                );
-                renderMyCallList(myCalls);
-            }
-        });
-    }
-    if (!unsubWk) {
-        unsubWk = onValue(ref(db, 'users'), snap => {
-            renderWorkers(snap);
-            if (currentUser?.role === 'master') renderMembers(snap);
-        });
-    }
-    // ── 실시간 콜 구독 ──
-    if (!unsubCall) {
-        let callInitDone = false;
-        unsubCall = onValue(ref(db, 'bookings'), snap => {
-            const pending = [];
-            if (snap.exists()) {
-                snap.forEach(c => {
-                    const d = c.val();
-                    if (d.status === '접수중') pending.push({ id: c.key, ...d });
-                });
-            }
-            pending.sort((a,b) => b.createdAt - a.createdAt);
-
-            // 새 콜 감지 (대기중일 때만 알람)
-            if (callInitDone) {
-                pending.forEach(p => {
-                    if (!pendingCallKeys.has(p.id)) {
-                        if (canReceiveAlarm()) {
-                            startCallAlarm(p);
-                        } else {
-                            // 알람 없이 배지/목록만 업데이트
-                            updateCallBadge(pending.length);
-                        }
-                    }
-                });
-            }
-
-            // 콜 사라진 것 처리 (배정됨)
-            const newKeys = new Set(pending.map(p => p.id));
-            pendingCallKeys.forEach(k => {
-                if (!newKeys.has(k)) stopCallAlarm();
-            });
-            pendingCallKeys = newKeys;
-
-            renderCallList(pending);
-            updateCallBadge(pending.length);
-            callInitDone = true;
-        });
-    }
-
-    // ── Firebase alerts 실시간 구독 (로그인 시 항상 구독) ──
-    if (!unsubAlert) {
-        let initKeys = new Set();
-        let initLoaded = false;
-        unsubAlert = onValue(ref(db, 'alerts'), snap => {
-            if (!snap.exists()) { initLoaded = true; return; }
-            const keys = [];
-            snap.forEach(c => keys.push(c.key));
-            if (!initLoaded) {
-                // 최초 로드: 기존 키만 기억, 알람 안 울림
-                keys.forEach(k => initKeys.add(k));
-                initLoaded = true;
-                return;
-            }
-            // 새로 추가된 키만 알람
-            keys.forEach(k => {
-                if (!initKeys.has(k)) {
-                    initKeys.add(k);
-                    const d = snap.child(k).val();
-                    triggerAlert(
-                        '📋 새 예약 접수!',
-                        `${d.name || ''} · ${d.size || ''} · ${d.address || ''}`
-                    );
-                }
-            });
-        });
-    }
-};
-
-/* ═══════════════ 실시간 콜 관련 ═══════════════ */
-
-// 내 상태 설정
-window.setMyStatus = async function(status) {
-    if (!currentUser) return;
-    await update(ref(db, 'users/' + currentUser.key), { workerStatus: status });
-    currentUser.workerStatus = status;
-    renderMyStatusCard(status);
-    // 퇴근/이동중/작업중으로 바꾸면 알람 중지
-    if (status === '퇴근' || status === '이동중' || status === '작업중') {
-        stopCallAlarm();
-        dismissAlert();
-        showToast('상태 변경: ' + status + ' (알람 일시 중지)');
-    } else {
-        showToast('상태 변경: ' + status + ' — 콜 알람 활성화');
-    }
-};
-
-window.renderMyStatusCard = function renderMyStatusCard(status) {
-    const labelEl = document.getElementById('my-status-label');
-    if (!labelEl) return;
-    const map = {
-        '대기중': { text: '🟢 대기중', sub: '콜 알람 ON — 새 예약 즉시 알림', color: '#27ae60' },
-        '이동중': { text: '🚗 이동중', sub: '콜 알람 OFF', color: '#f39c12' },
-        '작업중': { text: '🔴 작업중', sub: '콜 알람 OFF', color: '#e74c3c' },
-        '퇴근':   { text: '⚫ 퇴근',   sub: '콜 알람 OFF', color: '#888' },
-    };
-    const info = map[status] || map['대기중'];
-    labelEl.innerHTML = `
-        <span style="font-size:1.1rem;font-weight:900;">${info.text}</span>
-        <span style="font-size:0.75rem;opacity:0.7;margin-left:8px;">${info.sub}</span>
-    `;
-    // 버튼 활성화 표시
-    document.querySelectorAll('.ws-btn').forEach(btn => {
-        btn.classList.toggle('active-st', btn.dataset.st === status);
-    });
+    startListeners();
+    setTimeout(function(){renderStCard(found.workerStatus||'대기중');showTab('t-call');},200);
+  });
 }
 
-// 콜 배지 업데이트
-window.updateCallBadge = function updateCallBadge(count) {
-    const badge = document.getElementById('call-badge');
-    if (!badge) return;
-    if (count > 0) {
-        badge.style.display = 'inline-block';
-        badge.textContent = count;
-    } else {
-        badge.style.display = 'none';
-    }
-    const cntEl = document.getElementById('pending-count');
-    if (cntEl) cntEl.textContent = count > 0 ? `(${count}건)` : '';
+// 로그아웃
+function doLogout(){
+  CU=null; ALL_BK=[]; LAST_CNT=-1; PEND={};
+  if(UBK){UBK();UBK=null;}
+  if(UWK){UWK();UWK=null;}
+  if(UAL){UAL();UAL=null;}
+  if(CALL_TMR){clearInterval(CALL_TMR);CALL_TMR=null;}
+  dismissBanner();
+  goTo('main');
+  toast('로그아웃 되었습니다.');
+}
+
+// 가입신청
+function submitRegister(){
+  var name=document.getElementById('reg-name').value.trim();
+  var id=document.getElementById('reg-id').value.trim();
+  var pw=document.getElementById('reg-pw').value.trim();
+  var phone=document.getElementById('reg-phone').value.trim();
+  var area=document.getElementById('reg-area').value.trim();
+  if(!name||!id||!pw||!phone) return toast('모든 필수 항목을 입력하세요.');
+  DB.ref('users').once('value',function(snap){
+    var dup=false;
+    if(snap.exists()) snap.forEach(function(c){if(c.val().id===id) dup=true;});
+    if(dup) return toast('이미 사용 중인 아이디입니다.');
+    DB.ref('users').push({
+      id:id,name:name,password:pw,phone:phone,area:area,
+      role:'worker',status:'pending',workerStatus:'대기중',createdAt:Date.now()
+    },function(err){
+      if(err) return toast('오류: '+err.message);
+      toast('✅ 가입 신청 완료! 승인을 기다려주세요.');
+      ['reg-name','reg-id','reg-pw','reg-phone','reg-area'].forEach(function(i){document.getElementById(i).value='';});
+      goTo('admin-gate');
+    });
+  });
+}
+
+// 탭전환
+function showTab(id){
+  document.querySelectorAll('.apg').forEach(function(el){el.classList.remove('on');});
+  document.querySelectorAll('.atab').forEach(function(el){el.classList.remove('on');});
+  var c=document.getElementById(id); if(c) c.classList.add('on');
+  var t=document.querySelector('[data-tab="'+id+'"]'); if(t) t.classList.add('on');
+}
+
+// 리스너
+function startListeners(){
+  if(!UBK){
+    var r=DB.ref('bookings');
+    var cb=function(snap){
+      ALL_BK=[];
+      var np={};
+      if(snap.exists()) snap.forEach(function(c){
+        var d=Object.assign({id:c.key},c.val());
+        ALL_BK.push(d);
+        if(d.status==='접수중') np[c.key]=d;
+      });
+      ALL_BK.sort(function(a,b){return b.createdAt-a.createdAt;});
+      if(LAST_CNT>=0&&ALL_BK.length>LAST_CNT&&canAlarm()){
+        showBanner('📋 새 예약 접수!',ALL_BK[0].name+' · '+ALL_BK[0].size+' · '+ALL_BK[0].address);
+      }
+      LAST_CNT=ALL_BK.length;
+      // 새 콜 알람
+      Object.keys(np).forEach(function(k){
+        if(!PEND[k]&&canAlarm()) startCallAlarm(np[k]);
+      });
+      Object.keys(PEND).forEach(function(k){
+        if(!np[k]) stopCallAlarm();
+      });
+      PEND=np;
+      renderBkList(); renderDash(); renderMyRec(); renderCallList();
+      updateBadge(Object.keys(PEND).length);
+    };
+    r.on('value',cb);
+    UBK=function(){r.off('value',cb);};
+  }
+  if(!UWK){
+    var wr=DB.ref('users');
+    var wc=function(snap){
+      renderWorkers(snap);
+      if(CU&&CU.role==='master') renderMembers(snap);
+      var cnt=0;
+      if(snap.exists()) snap.forEach(function(c){
+        var d=c.val();
+        if(d.status==='approved'&&d.workerStatus==='대기중') cnt++;
+      });
+      var el=document.getElementById('st-ready'); if(el) el.textContent=cnt;
+    };
+    wr.on('value',wc);
+    UWK=function(){wr.off('value',wc);};
+  }
+  if(!UAL){
+    var ar=DB.ref('alerts');
+    var done=false, keys={};
+    var ac=function(snap){
+      if(!done){
+        if(snap.exists()) snap.forEach(function(c){keys[c.key]=true;});
+        done=true; return;
+      }
+      if(!snap.exists()) return;
+      snap.forEach(function(c){
+        if(!keys[c.key]){
+          keys[c.key]=true;
+          var d=c.val();
+          if(canAlarm()) showBanner('📋 새 예약!',(d.name||'')+' · '+(d.address||''));
+        }
+      });
+    };
+    ar.on('value',ac);
+    UAL=function(){ar.off('value',ac);};
+  }
+}
+
+// 콜 알람
+function startCallAlarm(bk){
+  if(!canAlarm()) return;
+  stopCallAlarm();
+  showBanner('🚨 새 콜 접수!',bk.name+' · '+bk.size+' · '+bk.address);
+  CALL_TMR=setInterval(function(){
+    if(!canAlarm()||!PEND[bk.id]){stopCallAlarm();return;}
+    playSound();
+    toast('🚨 미수락 콜! — '+bk.name);
+  },10000);
+}
+function stopCallAlarm(){
+  if(CALL_TMR){clearInterval(CALL_TMR);CALL_TMR=null;}
+  dismissBanner();
+}
+function updateBadge(cnt){
+  var b=document.getElementById('call-badge');
+  if(!b) return;
+  b.style.display=cnt>0?'inline-block':'none';
+  b.textContent=cnt;
+  var el=document.getElementById('pend-cnt');
+  if(el) el.textContent=cnt>0?'('+cnt+'건)':'';
 }
 
 // 콜 목록 렌더
-window.renderCallList = function renderCallList(pending) {
-    const listEl = document.getElementById('call-list');
-    if (!listEl) return;
-    if (!pending.length) {
-        listEl.innerHTML = `
-            <div style="text-align:center;padding:50px 20px;color:#ccc;">
-                <div style="font-size:2.5rem;margin-bottom:8px;">📭</div>
-                <p style="font-size:0.85rem;">현재 대기 중인 콜이 없습니다</p>
-                <p style="font-size:0.75rem;color:#bbb;">새 예약이 접수되면 자동으로 표시됩니다</p>
-            </div>`;
-        return;
-    }
-    listEl.innerHTML = pending.map(b => `
-        <div class="call-card" id="call-${b.id}">
-            <!-- 헤더 -->
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                <div style="font-weight:900;font-size:1rem;color:#e74c3c;">🚨 새 콜 접수!</div>
-                <div style="font-size:0.7rem;color:#999;">${b.dateStr || ''}</div>
-            </div>
-
-            <!-- 고객 전체 정보 -->
-            <div style="background:#f8f9fa;border-radius:12px;padding:12px;margin-bottom:10px;">
-                <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:0.85rem;line-height:1.6;">
-                    <span style="color:#999;white-space:nowrap;">👤 고객명</span>
-                    <span style="font-weight:bold;color:#111;">${b.name}</span>
-
-                    <span style="color:#999;white-space:nowrap;">📞 연락처</span>
-                    <span>
-                        <a href="tel:${b.phone}" style="
-                            font-weight:bold;color:#1971c2;text-decoration:none;
-                            background:#e7f5ff;padding:2px 10px;border-radius:20px;
-                        ">${b.phone} ☎</a>
-                    </span>
-
-                    <span style="color:#999;white-space:nowrap;">📍 주소</span>
-                    <span style="font-weight:bold;color:#333;">${b.address}</span>
-
-                    <span style="color:#999;white-space:nowrap;">📐 평수</span>
-                    <span style="color:#333;">${b.size}</span>
-
-                    ${b.facilityRequest ? `
-                    <span style="color:#999;white-space:nowrap;">🔧 시설보완</span>
-                    <span style="color:#007bff;font-weight:bold;">요청 있음</span>
-                    ` : ''}
-
-                    ${b.memo ? `
-                    <span style="color:#999;white-space:nowrap;">📝 메모</span>
-                    <span style="color:#555;">${b.memo}</span>
-                    ` : ''}
-                </div>
-            </div>
-
-            <!-- 수락 버튼 -->
-            <button class="call-accept-btn" onclick="acceptCall('${b.id}','${b.name}','${b.phone}')">
-                ✅ 이 콜 수락하기
-            </button>
-        </div>
-    `).join('');
+function renderCallList(){
+  var el=document.getElementById('call-list'); if(!el) return;
+  var pend=Object.values(PEND);
+  pend.sort(function(a,b){return b.createdAt-a.createdAt;});
+  if(!pend.length){
+    el.innerHTML='<div class="empty" style="padding:20px;"><div class="ei">📭</div><p style="font-size:.83rem;">대기 중인 콜이 없습니다</p></div>';
+    return;
+  }
+  var html='';
+  pend.forEach(function(b){
+    var bid=b.id, bname=b.name, bphone=b.phone;
+    html+='<div class="call-card">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
+      +'<div style="font-weight:900;font-size:.95rem;color:#e74c3c;">🚨 새 콜 접수!</div>'
+      +'<div style="font-size:.7rem;color:#999;">'+(b.dateStr||'')+'</div></div>'
+      +'<div style="background:#f8f9fa;border-radius:12px;padding:12px;margin-bottom:10px;">'
+      +'<div style="display:grid;grid-template-columns:auto 1fr;gap:5px 10px;font-size:.84rem;line-height:1.7;">'
+      +'<span style="color:#999;">👤</span><span style="font-weight:700;">'+b.name+'</span>'
+      +'<span style="color:#999;">📞</span><span><a href="tel:'+b.phone+'" style="color:#1971c2;font-weight:700;">'+b.phone+' ☎</a></span>'
+      +'<span style="color:#999;">📍</span><span style="font-weight:700;">'+b.address+'</span>'
+      +'<span style="color:#999;">📐</span><span>'+b.size+'</span>'
+      +(b.facilityRequest?'<span style="color:#999;">🔧</span><span style="color:#007bff;font-weight:700;">시설보완 요청</span>':'')
+      +(b.memo?'<span style="color:#999;">📝</span><span>'+b.memo+'</span>':'')
+      +'</div></div>'
+      +'<button class="acc-btn" data-bid="'+bid+'" data-name="'+bname+'" data-phone="'+bphone+'" onclick="acceptCallBtn(this)">✅ 이 콜 수락하기</button>'
+      +'</div>';
+  });
+  el.innerHTML=html;
 }
 
-// 내 수락 기록 렌더
-window.renderMyCallList = function renderMyCallList(myCalls) {
-    var listEl  = document.getElementById('my-call-list');
-    var countEl = document.getElementById('my-call-count');
-    if (!listEl) return;
-
-    if (countEl) countEl.textContent = myCalls.length > 0 ? '(총 ' + myCalls.length + '건)' : '';
-
-    if (!myCalls.length) {
-        listEl.innerHTML = '<div style="text-align:center;padding:30px;color:#ccc;font-size:0.83rem;"><div style="font-size:2rem;margin-bottom:8px;">📋</div><div>수락한 콜 기록이 없습니다</div></div>';
-        return;
-    }
-
-    var statusColor = { '배정완료':'#17a2b8','출동중':'#fd7e14','완료':'#27ae60','취소':'#aaa','접수중':'#ffc107' };
-    var done   = myCalls.filter(function(b){ return b.status==='완료'; }).length;
-    var active = myCalls.filter(function(b){ return b.status==='배정완료'||b.status==='출동중'; }).length;
-
-    var html = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">'
-        + '<div style="background:white;border-radius:12px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06);"><div style="font-size:1.4rem;font-weight:900;color:#e74c3c;">' + myCalls.length + '</div><div style="font-size:0.68rem;color:#999;">전체</div></div>'
-        + '<div style="background:white;border-radius:12px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06);"><div style="font-size:1.4rem;font-weight:900;color:#27ae60;">' + done + '</div><div style="font-size:0.68rem;color:#999;">완료</div></div>'
-        + '<div style="background:white;border-radius:12px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06);"><div style="font-size:1.4rem;font-weight:900;color:#17a2b8;">' + active + '</div><div style="font-size:0.68rem;color:#999;">진행중</div></div>'
-        + '</div>';
-
-    myCalls.forEach(function(b) {
-        var st    = b.status || '배정완료';
-        var color = statusColor[st] || '#999';
-        var dt    = b.acceptedAt ? new Date(b.acceptedAt).toLocaleString('ko-KR') : (b.dateStr || '');
-        var facility = b.facilityRequest ? '<div style="color:#007bff;font-weight:bold;">🔧 시설보완 요청</div>' : '';
-        var memo     = b.memo ? '<div style="color:#666;">📝 ' + b.memo + '</div>' : '';
-        var bid = b.id || '';
-
-        html += '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.05);border-left:4px solid ' + color + ';">';
-        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
-        html += '<div style="font-weight:900;font-size:0.95rem;color:#111;">' + (b.name||'') + '</div>';
-        html += '<span style="background:' + color + ';color:white;padding:3px 10px;border-radius:20px;font-size:0.7rem;font-weight:bold;">' + st + '</span>';
-        html += '</div>';
-        html += '<div style="font-size:0.83rem;color:#444;line-height:1.8;margin-bottom:10px;">';
-        html += '<div>📞 <a href="tel:' + (b.phone||'') + '" style="color:#1971c2;font-weight:bold;">' + (b.phone||'') + '</a></div>';
-        html += '<div>📍 ' + (b.address||'') + '</div>';
-        html += '<div>📐 ' + (b.size||'') + '</div>';
-        html += facility + memo;
-        html += '<div style="font-size:0.74rem;color:#bbb;">🕐 ' + dt + '</div>';
-        html += '</div>';
-        html += '<div style="display:flex;gap:6px;">';
-        html += '<button data-bid="' + bid + '" data-st="출동중" onclick="myCallStatus(this)" style="flex:1;padding:8px 4px;border:none;border-radius:8px;font-size:0.72rem;font-weight:bold;cursor:pointer;background:' + (st==='출동중'?'#fd7e14':'#f0f0f0') + ';color:' + (st==='출동중'?'white':'#555') + ';">🚗 출동중</button>';
-        html += '<button data-bid="' + bid + '" data-st="완료" onclick="myCallStatus(this)" style="flex:1;padding:8px 4px;border:none;border-radius:8px;font-size:0.72rem;font-weight:bold;cursor:pointer;background:' + (st==='완료'?'#27ae60':'#f0f0f0') + ';color:' + (st==='완료'?'white':'#555') + ';">✅ 완료</button>';
-        html += '<button data-bid="' + bid + '" data-st="취소" onclick="myCallStatus(this)" style="flex:1;padding:8px 4px;border:none;border-radius:8px;font-size:0.72rem;font-weight:bold;cursor:pointer;background:' + (st==='취소'?'#aaa':'#f0f0f0') + ';color:' + (st==='취소'?'white':'#888') + ';">❌ 취소</button>';
-        html += '</div></div>';
-    });
-
-    listEl.innerHTML = html;
-};
-
-// 내 콜 상태 변경 (data 속성 방식 - onclick 따옴표 충돌 방지)
-window.myCallStatus = function(btn) {
-    var bid = btn.getAttribute('data-bid');
-    var st  = btn.getAttribute('data-st');
-    if (bid && st) changeStatus(bid, st);
-};
-
-
-// 콜 수락
-window.acceptCall = async function(bkId, name, phone) {
-    if (!currentUser) return;
-    if (!confirm(`${name} 고객의 콜을 수락하시겠습니까?\n연락처: ${phone}`)) return;
-
-    try {
-        // ★ update 사용 - 기존 필드 유지하면서 상태만 변경
-        await update(ref(db, 'bookings/' + bkId), {
-            status: '배정완료',
-            workerName: currentUser.name || '',
-            workerPhone: currentUser.phone || '',
-            acceptedAt: Date.now(),
-            acceptedBy: currentUser.id || currentUser.key || ''
-        });
-        await update(ref(db, 'users/' + currentUser.key), { workerStatus: '이동중' });
-        currentUser.workerStatus = '이동중';
-        renderMyStatusCard('이동중');
-        stopCallAlarm();
-        showToast('✅ ' + name + ' 고객 콜 수락! 기록에 저장됩니다.');
-        // 콜탭에 계속 머물며 내 기록에서 확인
-        // (탭 전환 없이 현재 콜탭 유지)
-    } catch(e) {
-        showToast('오류: ' + e.message);
-    }
-};
-
-// 알람 울릴 상태인지 체크 (대기중만)
-window.canReceiveAlarm = function canReceiveAlarm() {
-    if (!currentUser) return false;
-    const st = currentUser.workerStatus || '대기중';
-    // 퇴근/이동중/작업중은 알람 안 울림
-    return st === '대기중';
-}
-
-// 소리 재생 (음소거 여부 감지 - 음소거면 진동만)
-window.playAlarmWithVibration = function playAlarmWithVibration() {
-    // 진동은 항상 실행 (음소거와 무관)
-    if (navigator.vibrate) navigator.vibrate([400, 150, 400, 150, 400]);
-
-    // 소리 시도 - Web Audio는 음소거 상태에서 자동 무음
-    playAlertSound();
-}
-
-// 콜 알람 시작 (10초마다 반복)
-window.startCallAlarm = function startCallAlarm(booking) {
-    if (!canReceiveAlarm()) return; // 대기중 아니면 알람 안 울림
+// 콜 수락 (data 속성 방식 - 따옴표 충돌 없음)
+function acceptCallBtn(btn){
+  var bid=btn.getAttribute('data-bid');
+  var bname=btn.getAttribute('data-name');
+  var bphone=btn.getAttribute('data-phone');
+  if(!CU) return;
+  if(!confirm(bname+' 고객의 콜을 수락하시겠습니까?\n연락처: '+bphone)) return;
+  DB.ref('bookings/'+bid).update({
+    status:'배정완료',
+    workerName:CU.name||'',
+    workerPhone:CU.phone||'',
+    acceptedAt:Date.now(),
+    acceptedBy:CU.id||CU.key||''
+  },function(err){
+    if(err) return toast('오류: '+err.message);
+    DB.ref('users/'+CU.key).update({workerStatus:'이동중'});
+    CU.workerStatus='이동중';
+    renderStCard('이동중');
     stopCallAlarm();
-    const msg = `${booking.name} · ${booking.size} · ${booking.address}`;
-    // 첫 알람
-    playAlarmWithVibration();
-    showAlertBanner('🚨 새 콜 접수!', msg);
-
-    callAlarmTimer = setInterval(() => {
-        if (!canReceiveAlarm()) { stopCallAlarm(); return; }
-        if (pendingCallKeys.has(booking.id)) {
-            playAlarmWithVibration();
-            showToast('🚨 미수락 콜! — ' + booking.name);
-        } else {
-            stopCallAlarm();
-        }
-    }, 10000);
+    toast('✅ '+bname+' 콜 수락 완료!');
+  });
 }
 
-// 콜 알람 중지
-window.stopCallAlarm = function stopCallAlarm() {
-    if (callAlarmTimer) { clearInterval(callAlarmTimer); callAlarmTimer = null; }
-    dismissAlert();
+// 내 기록 렌더
+function renderMyRec(){
+  var el=document.getElementById('my-call-list');
+  var cel=document.getElementById('my-cnt');
+  if(!el) return;
+  var mine=ALL_BK.filter(function(b){
+    return CU&&(b.acceptedBy===CU.id||b.workerName===CU.name||b.acceptedBy===CU.key);
+  });
+  mine.sort(function(a,b){return (b.acceptedAt||b.createdAt)-(a.acceptedAt||a.createdAt);});
+  if(cel) cel.textContent=mine.length>0?'(총 '+mine.length+'건)':'';
+  if(!mine.length){
+    el.innerHTML='<div class="empty" style="padding:20px;"><p style="font-size:.83rem;">수락한 콜이 없습니다</p></div>';
+    return;
+  }
+  var sc={'배정완료':'#17a2b8','출동중':'#fd7e14','완료':'#27ae60','취소':'#aaa','접수중':'#ffc107'};
+  var done=mine.filter(function(b){return b.status==='완료';}).length;
+  var act=mine.filter(function(b){return b.status==='배정완료'||b.status==='출동중';}).length;
+  var html='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">'
+    +'<div style="background:#fff;border-radius:12px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06);"><div style="font-size:1.4rem;font-weight:900;color:#e74c3c;">'+mine.length+'</div><div style="font-size:.68rem;color:#999;">전체</div></div>'
+    +'<div style="background:#fff;border-radius:12px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06);"><div style="font-size:1.4rem;font-weight:900;color:#27ae60;">'+done+'</div><div style="font-size:.68rem;color:#999;">완료</div></div>'
+    +'<div style="background:#fff;border-radius:12px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06);"><div style="font-size:1.4rem;font-weight:900;color:#17a2b8;">'+act+'</div><div style="font-size:.68rem;color:#999;">진행중</div></div>'
+    +'</div>';
+  mine.forEach(function(b){
+    var st=b.status||'배정완료';
+    var c=sc[st]||'#999';
+    var dt=b.acceptedAt?new Date(b.acceptedAt).toLocaleString('ko-KR'):(b.dateStr||'');
+    html+='<div class="my-rec" style="background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.05);border-left:4px solid '+c+';">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+      +'<div style="font-weight:900;font-size:.95rem;">'+b.name+'</div>'
+      +'<span class="st-b st-'+st+'">'+st+'</span></div>'
+      +'<div style="font-size:.83rem;color:#444;line-height:1.8;margin-bottom:10px;">'
+      +'<div>📞 <a href="tel:'+b.phone+'" style="color:#1971c2;font-weight:700;">'+b.phone+'</a></div>'
+      +'<div>📍 '+b.address+'</div>'
+      +'<div>📐 '+b.size+'</div>'
+      +(b.facilityRequest?'<div style="color:#007bff;font-weight:700;">🔧 시설보완 요청</div>':'')
+      +(b.memo?'<div>📝 '+b.memo+'</div>':'')
+      +'<div style="font-size:.74rem;color:#bbb;">🕐 '+dt+'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:6px;">'
+      +'<button data-bid="'+b.id+'" data-st="출동중" onclick="recSt(this)" style="flex:1;padding:8px 4px;border:none;border-radius:8px;font-size:.72rem;font-weight:700;cursor:pointer;background:'+(st==='출동중'?'#fd7e14':'#f0f0f0')+';color:'+(st==='출동중'?'#fff':'#555')+';">🚗 출동중</button>'
+      +'<button data-bid="'+b.id+'" data-st="완료" onclick="recSt(this)" style="flex:1;padding:8px 4px;border:none;border-radius:8px;font-size:.72rem;font-weight:700;cursor:pointer;background:'+(st==='완료'?'#27ae60':'#f0f0f0')+';color:'+(st==='완료'?'#fff':'#555')+';">✅ 완료</button>'
+      +'<button data-bid="'+b.id+'" data-st="취소" onclick="recSt(this)" style="flex:1;padding:8px 4px;border:none;border-radius:8px;font-size:.72rem;font-weight:700;cursor:pointer;background:'+(st==='취소'?'#aaa':'#f0f0f0')+';color:'+(st==='취소'?'#fff':'#888')+';">❌ 취소</button>'
+      +'</div></div>';
+  });
+  el.innerHTML=html;
+}
+function recSt(btn){
+  var bid=btn.getAttribute('data-bid');
+  var st=btn.getAttribute('data-st');
+  if(bid&&st) changeStatus(bid,st);
 }
 
-/* ─── Web Audio 알람 소리 생성 ─── */
-let alertSoundInterval = null;
-let _audioCtx = null; // 전역 AudioContext (한 번만 생성)
-
-// 사용자 터치 시 AudioContext 미리 활성화
-window.unlockAudio = function unlockAudio() {
-    if (_audioCtx) return;
-    try {
-        _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        // 무음 재생으로 잠금 해제
-        const buf = _audioCtx.createBuffer(1, 1, 22050);
-        const src = _audioCtx.createBufferSource();
-        src.buffer = buf;
-        src.connect(_audioCtx.destination);
-        src.start(0);
-        console.log('🔊 오디오 활성화 완료');
-    } catch(e) { console.log('오디오 활성화 실패:', e); }
+// 내 상태
+function setMyStatus(st){
+  if(!CU) return;
+  DB.ref('users/'+CU.key).update({workerStatus:st},function(err){
+    if(err) return toast('오류: '+err.message);
+    CU.workerStatus=st;
+    renderStCard(st);
+    if(st!=='대기중'){stopCallAlarm();toast('상태: '+st+' (알람 OFF)');}
+    else toast('상태: 대기중 — 알람 ON');
+  });
+}
+function renderStCard(st){
+  var el=document.getElementById('my-st-label'); if(!el) return;
+  var map={'대기중':'🟢 대기중 — 콜 알람 ON','이동중':'🚗 이동중 — 콜 알람 OFF',
+    '작업중':'🔴 작업중 — 콜 알람 OFF','퇴근':'⚫ 퇴근 — 콜 알람 OFF'};
+  el.textContent=map[st]||st;
+  document.querySelectorAll('.ws-btn').forEach(function(b){
+    b.classList.toggle('on',b.getAttribute('data-st')===st);
+  });
 }
 
-window.playAlertSound = function playAlertSound() {
-    try {
-        // AudioContext 없으면 새로 생성
-        if (!_audioCtx) {
-            _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        // suspended 상태면 resume
-        if (_audioCtx.state === 'suspended') {
-            _audioCtx.resume();
-        }
-        const ctx = _audioCtx;
-        // 긴급 알람음: 삐-삐-삐 3회 + 낮은음
-        const pattern = [
-            { freq: 1200, start: 0.0,  dur: 0.15 },
-            { freq: 900,  start: 0.0,  dur: 0.15 },
-            { freq: 1200, start: 0.25, dur: 0.15 },
-            { freq: 900,  start: 0.25, dur: 0.15 },
-            { freq: 1200, start: 0.5,  dur: 0.15 },
-            { freq: 900,  start: 0.5,  dur: 0.15 },
-        ];
-        pattern.forEach(({ freq, start, dur }) => {
-            const osc  = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.type = 'square'; // 더 선명한 소리
-            osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
-            gain.gain.setValueAtTime(0.6, ctx.currentTime + start);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-            osc.start(ctx.currentTime + start);
-            osc.stop(ctx.currentTime + start + dur + 0.05);
-        });
-    } catch(e) { console.log('소리 재생 오류:', e); }
+// 대시보드
+function renderDash(){
+  var today=new Date().toLocaleDateString('ko-KR');
+  var tc=ALL_BK.filter(function(b){return (b.dateStr||'').startsWith(today);}).length;
+  var pc=ALL_BK.filter(function(b){return b.status==='접수중';}).length;
+  var e1=document.getElementById('st-today'); if(e1) e1.textContent=tc;
+  var e2=document.getElementById('st-pend');  if(e2) e2.textContent=pc;
+  var e3=document.getElementById('st-total'); if(e3) e3.textContent=ALL_BK.length;
+  var dl=document.getElementById('dash-list'); if(!dl) return;
+  var rec=ALL_BK.slice(0,5);
+  if(!rec.length){dl.innerHTML='<div class="empty"><p>예약이 없습니다</p></div>';return;}
+  var html='';
+  rec.forEach(function(b){
+    html+='<div class="bki"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">'
+      +'<div><strong>'+b.name+'</strong> <span class="text-muted small">· '+b.size+'</span>'
+      +'<div class="text-muted" style="font-size:.72rem;">'+(b.dateStr||'')+'</div></div>'
+      +'<span class="st-b st-'+b.status+'">'+b.status+'</span></div>'
+      +'<div style="font-size:.82rem;color:#555;line-height:1.75;">'
+      +'<p style="margin:0;">📞 <a href="tel:'+b.phone+'" style="color:#1971c2;font-weight:700;">'+b.phone+'</a></p>'
+      +'<p style="margin:0;">📍 '+b.address+'</p></div></div>';
+  });
+  dl.innerHTML=html;
 }
 
-/* ─── 알람 배너 표시 ─── */
-window.showAlertBanner = function showAlertBanner(title, body) {
-    // 기존 배너 제거
-    const existing = document.getElementById('alert-banner');
-    if (existing) existing.remove();
-
-    const banner = document.createElement('div');
-    banner.id = 'alert-banner';
-    banner.innerHTML = `
-        <div style="
-            position:fixed; top:0; left:0; right:0; z-index:99999;
-            background:linear-gradient(135deg,#e74c3c,#c0392b);
-            color:white; padding:16px 20px 14px;
-            box-shadow:0 4px 20px rgba(0,0,0,0.4);
-            animation: slideDown 0.3s ease;
-        ">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                <div>
-                    <div style="font-weight:900;font-size:1rem;margin-bottom:4px;">🔔 ${title}</div>
-                    <div style="font-size:0.82rem;opacity:0.92;">${body}</div>
-                </div>
-                <button onclick="dismissAlert()" style="
-                    background:rgba(255,255,255,0.2);border:none;color:white;
-                    border-radius:8px;padding:6px 12px;font-size:0.8rem;cursor:pointer;
-                    margin-left:10px;flex-shrink:0;
-                ">확인</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(banner);
-
-    // 소리 + 진동 반복 (확인 누를 때까지)
-    playAlertSound();
-    if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 300]);
-
-    // 5초마다 소리 반복
-    if (alertSoundInterval) clearInterval(alertSoundInterval);
-    alertSoundInterval = setInterval(() => {
-        playAlertSound();
-        if (navigator.vibrate) navigator.vibrate([300, 150, 300]);
-    }, 5000);
-}
-
-window.dismissAlert = function() {
-    const b = document.getElementById('alert-banner');
-    if (b) b.remove();
-    if (alertSoundInterval) { clearInterval(alertSoundInterval); alertSoundInterval = null; }
-};
-
-/* ─── 알람 트리거 ─── */
-window.triggerAlert = function triggerAlert(title, body) {
-    // 대기중일 때만 소리/진동 알람
-    if (canReceiveAlarm()) {
-        playAlarmWithVibration();
+// 예약 목록
+function renderBkList(){
+  var el=document.getElementById('bk-list'); if(!el) return;
+  var list=BK_FILTER?ALL_BK.filter(function(b){return b.status===BK_FILTER;}):ALL_BK;
+  if(!list.length){el.innerHTML='<div class="empty"><div class="ei">📭</div><p>예약이 없습니다</p></div>';return;}
+  var html='';
+  list.forEach(function(b){
+    html+='<div class="bki"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">'
+      +'<div><strong>'+b.name+'</strong> <span class="text-muted small">· '+b.size+'</span>'
+      +'<div class="text-muted" style="font-size:.72rem;">'+(b.dateStr||'')+'</div></div>'
+      +'<span class="st-b st-'+b.status+'">'+b.status+'</span></div>'
+      +'<div style="font-size:.82rem;color:#555;line-height:1.75;">'
+      +'<p style="margin:0;">📞 <a href="tel:'+b.phone+'" style="color:#1971c2;font-weight:700;">'+b.phone+'</a></p>'
+      +'<p style="margin:0;">📍 '+b.address+'</p>'
+      +(b.facilityRequest?'<p style="margin:0;color:#007bff;font-weight:700;">✅ 시설보완 요청</p>':'')
+      +(b.memo?'<p style="margin:0;">📝 '+b.memo+'</p>':'')
+      +(b.workerName?'<p style="margin:0;">👷 담당: <b>'+b.workerName+'</b></p>':'')
+      +'</div><div class="mt-2">'
+      +['접수중','배정완료','출동중','완료','취소'].map(function(s){
+        return '<button class="stbtn'+(b.status===s?' on':'')+'" data-bid="'+b.id+'" data-st="'+s+'" onclick="stBtnClick(this)">'+s+'</button>';
+      }).join('')
+      +'</div>';
+    if(b.status==='배정완료'||b.status==='출동중'){
+      html+='<div class="mt-2 d-flex gap-2">'
+        +'<input type="text" id="wa-'+b.id+'" class="form-control form-control-sm" placeholder="작업자 이름" value="'+(b.workerName||'')+'" style="border-radius:8px;">'
+        +'<input type="tel" id="wp-'+b.id+'" class="form-control form-control-sm" placeholder="전화번호" value="'+(b.workerPhone||'')+'" style="border-radius:8px;">'
+        +'<button class="btn btn-sm btn-dark" style="border-radius:8px;white-space:nowrap;" data-bid="'+b.id+'" onclick="assignBtn(this)">배정</button>'
+        +'</div>';
     }
-    showToast('🔔 ' + title);
-    showAlertBanner(title, body);
-    // 브라우저 Notification (백그라운드용)
-    if (typeof Notification !== 'undefined') {
-        if (Notification.permission === 'granted') {
-            new Notification(title, { body });
-        } else if (Notification.permission !== 'denied') {
-            Notification.requestPermission().then(p => {
-                if (p === 'granted') new Notification(title, { body });
-            });
-        }
+    html+='</div>';
+  });
+  el.innerHTML=html;
+}
+function stBtnClick(btn){
+  var bid=btn.getAttribute('data-bid');
+  var st=btn.getAttribute('data-st');
+  DB.ref('bookings/'+bid).update({status:st},function(err){if(!err) toast('상태: '+st);});
+}
+function assignBtn(btn){
+  var bid=btn.getAttribute('data-bid');
+  var ne=document.getElementById('wa-'+bid);
+  var pe=document.getElementById('wp-'+bid);
+  if(!ne||!ne.value.trim()) return toast('작업자 이름을 입력하세요.');
+  DB.ref('bookings/'+bid).update({
+    workerName:ne.value.trim(),
+    workerPhone:pe?pe.value.trim():''
+  },function(err){if(!err) toast('배정 완료');});
+}
+function filterBk(st){BK_FILTER=st;renderBkList();}
+function changeStatus(bid,st){
+  DB.ref('bookings/'+bid).update({status:st},function(err){if(!err) toast('상태: '+st);});
+}
+
+// 작업자 렌더
+function renderWorkers(snap){
+  var el=document.getElementById('wk-list'); if(!el) return;
+  var wk=[];
+  if(snap.exists()) snap.forEach(function(c){
+    var d=c.val(); if(d.status==='approved') wk.push(Object.assign({key:c.key},d));
+  });
+  if(!wk.length){el.innerHTML='<div class="empty"><div class="ei">👷</div><p>작업자 없음</p></div>';return;}
+  var lm={'대기중':'🟢 대기중','이동중':'🚗 이동중','작업중':'🔴 작업중','퇴근':'⚫ 퇴근'};
+  var rm={'master':'마스터','admin':'관리자','worker':'작업자'};
+  var rc={'master':'bg-danger','admin':'bg-primary','worker':'bg-secondary'};
+  var html='';
+  wk.forEach(function(w){
+    var st=w.workerStatus||'대기중';
+    var cy=['대기중','이동중','작업중','퇴근'];
+    var next=cy[(cy.indexOf(st)+1)%cy.length];
+    html+='<div class="wkc"><div>'
+      +'<div class="fw-bold">'+w.name+' <span class="badge '+(rc[w.role]||'bg-secondary')+'" style="font-size:.62rem;">'+(rm[w.role]||'작업자')+'</span></div>'
+      +'<div class="text-muted small">'+(w.area||'')+' · '+(w.phone||'')+'</div>'
+      +'<div class="small mt-1 '+(st==='대기중'?'text-success fw-bold':'text-secondary')+'">'+(lm[st]||st)+'</div>'
+      +'</div>';
+    if(w.role!=='master'){
+      html+='<button class="tg '+(st==='대기중'?'tg-g':'tg-r')+'" data-key="'+w.key+'" data-st="'+st+'" onclick="twBtn(this)">→ '+next+'</button>';
     }
+    html+='</div>';
+  });
+  el.innerHTML=html;
+}
+function twBtn(btn){
+  var key=btn.getAttribute('data-key');
+  var cur=btn.getAttribute('data-st');
+  var cy=['대기중','이동중','작업중','퇴근'];
+  var next=cy[(cy.indexOf(cur)+1)%cy.length];
+  DB.ref('users/'+key).update({workerStatus:next},function(err){if(!err) toast('상태: '+next);});
 }
 
-/* ─── 대시보드 렌더 ─── */
-window.renderDashboard = function renderDashboard() {
-    const todayStr = new Date().toLocaleDateString('ko-KR');
-    const todayCnt   = allBookings.filter(b => (b.dateStr || '').startsWith(todayStr)).length;
-    const pendingCnt = allBookings.filter(b => b.status === '접수중').length;
-    document.getElementById('stat-today').textContent   = todayCnt;
-    document.getElementById('stat-pending').textContent = pendingCnt;
-    document.getElementById('stat-total').textContent   = allBookings.length;
-    const recent = allBookings.slice(0, 5);
-    document.getElementById('dash-recent').innerHTML = recent.length
-        ? recent.map(b => `
-            <div class="booking-item">
-                <div class="booking-top">
-                    <div><strong>${b.name}</strong> <span class="text-muted small">· ${b.size}</span></div>
-                    <span class="status-badge badge-${b.status}">${b.status}</span>
-                </div>
-                <div class="booking-info">
-                    <p>👤 ${b.name} · ${b.size}</p>
-                    <p>📞 <a href="tel:${b.phone}" style="color:#1971c2;font-weight:bold;">${b.phone}</a></p>
-                    <p>📍 ${b.address}</p>
-                </div>
-            </div>`).join('')
-        : '<div class="empty"><p>예약이 없습니다</p></div>';
+// 회원관리
+function renderMembers(snap){
+  var pe=document.getElementById('mem-pend'),ae=document.getElementById('mem-appr');
+  if(!pe||!ae) return;
+  var pend=[],appr=[];
+  if(snap.exists()) snap.forEach(function(c){
+    var d=c.val(); if(d.role==='master') return;
+    if(d.status==='pending') pend.push(Object.assign({key:c.key},d));
+    if(d.status==='approved') appr.push(Object.assign({key:c.key},d));
+  });
+  pe.innerHTML=pend.length?pend.map(function(m){
+    return '<div class="memc"><div><strong>'+m.name+'</strong> <span class="text-muted small">('+m.id+')</span></div>'
+      +'<div class="text-muted small">'+m.phone+' · '+m.area+'</div>'
+      +'<div class="mact">'
+      +'<button class="mb2 mb2-g" data-key="'+m.key+'" onclick="apprBtn(this)">✅ 승인</button>'
+      +'<button class="mb2 mb2-r" data-key="'+m.key+'" onclick="rejBtn(this)">❌ 거절</button>'
+      +'</div></div>';
+  }).join(''):'<p class="text-muted small">대기 없음</p>';
+  ae.innerHTML=appr.length?appr.map(function(m){
+    return '<div class="memc"><div><strong>'+m.name+'</strong>'
+      +' <span class="badge '+(m.role==='admin'?'bg-primary':'bg-secondary')+'" style="font-size:.62rem;">'+(m.role==='admin'?'관리자':'작업자')+'</span>'
+      +' <span class="text-muted small">('+m.id+')</span></div>'
+      +'<div class="text-muted small">'+m.phone+' · '+m.area+'</div>'
+      +'<div class="mact">'
+      +(m.role==='worker'?'<button class="mb2 mb2-b" data-key="'+m.key+'" onclick="proBtn(this)">⬆️ 관리자</button>'
+        :'<button class="mb2 mb2-x" data-key="'+m.key+'" onclick="demBtn(this)">⬇️ 작업자</button>')
+      +'<button class="mb2 mb2-r" data-key="'+m.key+'" onclick="revBtn(this)">🚫 정지</button>'
+      +'</div></div>';
+  }).join(''):'<p class="text-muted small">승인된 회원 없음</p>';
 }
+function apprBtn(b){DB.ref('users/'+b.getAttribute('data-key')).update({status:'approved'},function(){toast('✅ 승인');});}
+function rejBtn(b){DB.ref('users/'+b.getAttribute('data-key')).update({status:'rejected'},function(){toast('거절 처리');});}
+function revBtn(b){if(!confirm('계정을 정지하겠습니까?'))return;DB.ref('users/'+b.getAttribute('data-key')).update({status:'rejected'},function(){toast('정지 완료');});}
+function proBtn(b){DB.ref('users/'+b.getAttribute('data-key')).update({role:'admin'},function(){toast('관리자 승격');});}
+function demBtn(b){DB.ref('users/'+b.getAttribute('data-key')).update({role:'worker'},function(){toast('작업자로 변경');});}
 
-/* ─── 예약 목록 렌더 ─── */
-window.renderBookings = function renderBookings() {
-    const listEl   = document.getElementById('bk-list');
-    const filtered = bkFilter ? allBookings.filter(b => b.status === bkFilter) : allBookings;
-    if (!filtered.length) {
-        listEl.innerHTML = '<div class="empty"><div class="ei">📭</div><p>예약이 없습니다</p></div>';
-        return;
-    }
-    listEl.innerHTML = filtered.map(b => `
-        <div class="booking-item">
-            <div class="booking-top">
-                <div>
-                    <strong>${b.name}</strong>
-                    <span class="text-muted small"> · ${b.size}</span>
-                    <div class="text-muted" style="font-size:0.72rem;">${b.dateStr || ''}</div>
-                </div>
-                <span class="status-badge badge-${b.status}">${b.status}</span>
-            </div>
-            <div class="booking-info">
-                <p>👤 ${b.name} · ${b.size}</p>
-                <p>📞 <a href="tel:${b.phone}" style="color:#1971c2;font-weight:bold;">${b.phone}</a></p>
-                <p>📍 ${b.address}</p>
-                ${b.facilityRequest ? '<p class="text-primary fw-bold">✅ 시설보완 요청</p>' : ''}
-                ${b.memo ? `<p>📝 ${b.memo}</p>` : ''}
-                ${b.workerName ? `<p>👷 담당: <b>${b.workerName}</b></p>` : ''}
-            </div>
-            <div class="mt-2">
-                ${['접수중','배정완료','출동중','완료','취소'].map(s =>
-                    `<button class="status-btn ${b.status===s?'on':''}" onclick="changeStatus('${b.id}','${s}')">${s}</button>`
-                ).join('')}
-            </div>
-            ${b.status === '배정완료' || b.status === '출동중' ? `
-            <div class="mt-2">
-                <div class="d-flex gap-2 mb-1">
-                    <input type="text" id="wa-${b.id}" class="form-control form-control-sm"
-                        placeholder="작업자 이름" value="${b.workerName||''}" style="border-radius:8px;">
-                </div>
-                <div class="d-flex gap-2">
-                    <input type="tel" id="wp-${b.id}" class="form-control form-control-sm"
-                        placeholder="작업자 전화번호" value="${b.workerPhone||''}" style="border-radius:8px;">
-                    <button class="btn btn-sm btn-dark" style="border-radius:8px;white-space:nowrap;" onclick="assignWorker('${b.id}')">배정</button>
-                </div>
-            </div>` : ''}
-        </div>
-    `).join('');
-}
+// 첫 터치 오디오 활성화
+document.addEventListener('touchstart',function f(){unlockAudio();document.removeEventListener('touchstart',f);},{once:true});
+document.addEventListener('click',function f(){unlockAudio();document.removeEventListener('click',f);},{once:true});
+if('Notification' in window&&Notification.permission==='default') Notification.requestPermission();
 
-window.filterBk = function(status) { bkFilter = status; renderBookings(); };
-
-window.changeStatus = async function(bkId, status) {
-    await update(ref(db, 'bookings/' + bkId), { status });
-    showToast('상태 변경: ' + status);
-};
-window.assignWorker = async function(bkId) {
-    const nameEl  = document.getElementById('wa-'  + bkId);
-    const phoneEl = document.getElementById('wp-'  + bkId);
-    if (!nameEl || !nameEl.value.trim()) return showToast('작업자 이름을 입력하세요.');
-    await update(ref(db, 'bookings/' + bkId), {
-        workerName: nameEl.value.trim(),
-        workerPhone: phoneEl ? phoneEl.value.trim() : ''
-    });
-    // 고객 매칭 알람 저장
-    await push(ref(db, 'customer_alerts'), {
-        bookingId: bkId, type: 'matched',
-        workerName: nameEl.value.trim(),
-        createdAt: Date.now(), read: false
-    });
-    showToast('✅ 작업자 배정 완료 — 고객 알람 전송됨');
-};
-
-/* ─── 작업자 렌더 ─── */
-window.renderWorkers = function renderWorkers(snap) {
-    const listEl = document.getElementById('wk-list');
-    const statEl = document.getElementById('stat-ready');
-    const workers = [];
-    if (snap.exists()) {
-        snap.forEach(c => {
-            const d = c.val();
-            if (d.status === 'approved') workers.push({ key: c.key, ...d });
-        });
-    }
-    const readyCnt = workers.filter(w => w.workerStatus === '대기중').length;
-    if (statEl) statEl.textContent = readyCnt;
-
-    if (!workers.length) {
-        listEl.innerHTML = '<div class="empty"><div class="ei">👷</div><p>작업자가 없습니다</p></div>';
-        return;
-    }
-    listEl.innerHTML = workers.map(w => {
-        const ss = workerStatusStyle(w.workerStatus || '대기중');
-        const cycle = ['대기중','이동중','작업중','퇴근'];
-        const cur = w.workerStatus || '대기중';
-        const nextIdx = (cycle.indexOf(cur)+1) % cycle.length;
-        const next = cycle[nextIdx];
-        return `
-        <div class="worker-manage-card">
-            <div>
-                <div class="fw-bold">
-                    ${w.name}
-                    <span class="badge ms-1 ${w.role==='master'?'bg-danger':w.role==='admin'?'bg-primary':'bg-secondary'}"
-                        style="font-size:0.62rem;">
-                        ${w.role==='master'?'마스터':w.role==='admin'?'관리자':'작업자'}
-                    </span>
-                </div>
-                <div class="text-muted small">${w.area||''} · ${w.phone||''}</div>
-                <div class="small mt-1 fw-bold ${ss.cls}">${ss.label}</div>
-            </div>
-            ${w.role !== 'master' ? `
-            <button class="toggle-btn ${cur==='퇴근'||cur==='작업중'?'toggle-busy':'toggle-ready'}"
-                onclick="toggleWorker('${w.key}','${cur}')">
-                → ${next}
-            </button>` : ''}
-        </div>`;
-    }).join('');
-}
-
-window.toggleWorker = async function(key, cur) {
-    const cycle = ['대기중', '이동중', '작업중', '퇴근'];
-    const idx = cycle.indexOf(cur);
-    const next = cycle[(idx + 1) % cycle.length];
-    await update(ref(db, 'users/' + key), { workerStatus: next });
-    showToast('상태: ' + next);
-};
-
-/* ─── 회원 관리 렌더 ─── */
-window.renderMembers = function renderMembers(snap) {
-    const pEl = document.getElementById('mem-pending');
-    const aEl = document.getElementById('mem-approved');
-    const pending = [], approved = [];
-    if (snap.exists()) {
-        snap.forEach(c => {
-            const d = c.val();
-            if (d.role === 'master') return;
-            if (d.status === 'pending')  pending.push({ key: c.key, ...d });
-            if (d.status === 'approved') approved.push({ key: c.key, ...d });
-        });
-    }
-    pEl.innerHTML = pending.length ? pending.map(m => `
-        <div class="member-card">
-            <div><strong>${m.name}</strong> <span class="text-muted small">(${m.id})</span></div>
-            <div class="text-muted small">${m.phone} · ${m.area}</div>
-            <div class="member-actions">
-                <button class="mbtn mbtn-approve" onclick="approveMem('${m.key}')">✅ 승인</button>
-                <button class="mbtn mbtn-reject"  onclick="rejectMem('${m.key}')">❌ 거절</button>
-            </div>
-        </div>`) .join('') : '<p class="text-muted small">대기 중인 신청자 없음</p>';
-
-    aEl.innerHTML = approved.length ? approved.map(m => `
-        <div class="member-card">
-            <div>
-                <strong>${m.name}</strong>
-                <span class="badge ms-1 ${m.role==='admin'?'bg-primary':'bg-secondary'}" style="font-size:0.62rem;">
-                    ${m.role==='admin'?'관리자':'작업자'}
-                </span>
-                <span class="text-muted small ms-1">(${m.id})</span>
-            </div>
-            <div class="text-muted small">${m.phone} · ${m.area}</div>
-            <div class="member-actions">
-                ${m.role==='worker'
-                    ? `<button class="mbtn mbtn-promote" onclick="promoteMem('${m.key}')">⬆️ 관리자 승격</button>`
-                    : `<button class="mbtn mbtn-demote"  onclick="demoteMem('${m.key}')">⬇️ 작업자로</button>`}
-                <button class="mbtn mbtn-reject" onclick="revokeMem('${m.key}')">🚫 계정 정지</button>
-            </div>
-        </div>`).join('') : '<p class="text-muted small">승인된 회원 없음</p>';
-}
-
-window.approveMem = async k => { await update(ref(db,'users/'+k),{status:'approved'}); showToast('✅ 승인 완료'); };
-window.rejectMem  = async k => { await update(ref(db,'users/'+k),{status:'rejected'}); showToast('거절 처리 완료'); };
-window.revokeMem  = async k => {
-    if (!confirm('계정을 정지하겠습니까?')) return;
-    await update(ref(db,'users/'+k),{status:'rejected'}); showToast('계정 정지 완료');
-};
-window.promoteMem = async k => { await update(ref(db,'users/'+k),{role:'admin'});  showToast('관리자로 승격 완료'); };
-window.demoteMem  = async k => { await update(ref(db,'users/'+k),{role:'worker'}); showToast('작업자로 변경 완료'); };
-
-/* ── 앱 시작 ── */
-// 알람 권한 요청
-if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-}
-
-// 첫 터치 시 오디오 자동 활성화
-document.addEventListener('touchstart', function onFirstTouch() {
-    unlockAudio();
-    document.removeEventListener('touchstart', onFirstTouch);
-}, { once: true });
-
-// 클릭도 동일하게
-document.addEventListener('click', function onFirstClick() {
-    unlockAudio();
-    document.removeEventListener('click', onFirstClick);
-}, { once: true });
-
+// 시작
 goTo('main');
 </script>
 </body>
