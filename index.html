@@ -6,12 +6,12 @@
     <title>24시 바퀴벌레 긴급출동</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700;900&display=swap');
         @font-face {
             font-family: 'Pretendard';
             src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
             font-weight: 400;
         }
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700;900&display=swap');
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -867,13 +867,11 @@
 <!-- ════════════════════════════════
      Firebase + 앱 로직
 ════════════════════════════════ -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, push, get, update, onValue }
-    from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
 /* ── Firebase 초기화 ── */
-const app = initializeApp({
+const app = firebase.initializeApp({
     apiKey: "AIzaSyAHU0tia2PKucx8rhXZ6D6R8OtLf5bMLEk",
     authDomain: "cockroach-a8822.firebaseapp.com",
     databaseURL: "https://cockroach-a8822-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -883,7 +881,18 @@ const app = initializeApp({
     appId: "1:811643267338:web:bc72a1103574eb6462f2f3",
     measurementId: "G-9WX5LW5JZX"
 });
-const db = getDatabase(app);
+const db = firebase.database();
+
+/* ── compat 방식 함수 래퍼 ── */
+function ref(db, path) { return db.ref(path); }
+function push(refObj, data) { return refObj.push(data); }
+function set(refObj, data) { return refObj.set(data); }
+function update(refObj, data) { return refObj.update(data); }
+function get(refObj) { return refObj.once('value'); }
+function onValue(refObj, cb) {
+    refObj.on('value', cb);
+    return function() { refObj.off('value', cb); };
+}
 
 /* ── 전역 상태 ── */
 let currentUser = null;
