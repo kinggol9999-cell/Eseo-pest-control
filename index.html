@@ -885,7 +885,13 @@ const db = firebase.database();
 
 /* ── compat 방식 함수 래퍼 ── */
 function ref(db, path) { return db.ref(path); }
-function push(refObj, data) { return refObj.push(data); }
+function push(refObj, data) {
+    return new Promise(function(resolve, reject) {
+        var newRef = refObj.push(data, function(err) {
+            if (err) reject(err); else resolve(newRef);
+        });
+    });
+}
 function set(refObj, data) { return refObj.set(data); }
 function update(refObj, data) { return refObj.update(data); }
 function get(refObj) { return refObj.once('value'); }
@@ -1419,8 +1425,8 @@ window.renderCallList = function renderCallList(pending) {
 
 // 내 수락 기록 렌더
 window.renderMyCallList = function renderMyCallList(myCalls) {
-    const listEl  = document.getElementById('my-call-list');
-    const countEl = document.getElementById('my-call-count');
+    var listEl  = document.getElementById('my-call-list');
+    var countEl = document.getElementById('my-call-count');
     if (!listEl) return;
 
     if (countEl) countEl.textContent = myCalls.length > 0 ? '(총 ' + myCalls.length + '건)' : '';
@@ -1430,68 +1436,53 @@ window.renderMyCallList = function renderMyCallList(myCalls) {
         return;
     }
 
-    const statusColor = {
-        '배정완료': '#17a2b8',
-        '출동중':   '#fd7e14',
-        '완료':     '#27ae60',
-        '취소':     '#aaa',
-        '접수중':   '#ffc107',
-    };
+    var statusColor = { '배정완료':'#17a2b8','출동중':'#fd7e14','완료':'#27ae60','취소':'#aaa','접수중':'#ffc107' };
+    var done   = myCalls.filter(function(b){ return b.status==='완료'; }).length;
+    var active = myCalls.filter(function(b){ return b.status==='배정완료'||b.status==='출동중'; }).length;
 
-    const done   = myCalls.filter(function(b){ return b.status === '완료'; }).length;
-    const active = myCalls.filter(function(b){ return b.status === '배정완료' || b.status === '출동중'; }).length;
-
-    let html = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">'
-        + '<div style="background:white;border-radius:12px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06);">'
-        + '<div style="font-size:1.4rem;font-weight:900;color:#e74c3c;">' + myCalls.length + '</div>'
-        + '<div style="font-size:0.68rem;color:#999;margin-top:2px;">전체</div></div>'
-        + '<div style="background:white;border-radius:12px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06);">'
-        + '<div style="font-size:1.4rem;font-weight:900;color:#27ae60;">' + done + '</div>'
-        + '<div style="font-size:0.68rem;color:#999;margin-top:2px;">완료</div></div>'
-        + '<div style="background:white;border-radius:12px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06);">'
-        + '<div style="font-size:1.4rem;font-weight:900;color:#17a2b8;">' + active + '</div>'
-        + '<div style="font-size:0.68rem;color:#999;margin-top:2px;">진행중</div></div>'
+    var html = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">'
+        + '<div style="background:white;border-radius:12px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06);"><div style="font-size:1.4rem;font-weight:900;color:#e74c3c;">' + myCalls.length + '</div><div style="font-size:0.68rem;color:#999;">전체</div></div>'
+        + '<div style="background:white;border-radius:12px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06);"><div style="font-size:1.4rem;font-weight:900;color:#27ae60;">' + done + '</div><div style="font-size:0.68rem;color:#999;">완료</div></div>'
+        + '<div style="background:white;border-radius:12px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06);"><div style="font-size:1.4rem;font-weight:900;color:#17a2b8;">' + active + '</div><div style="font-size:0.68rem;color:#999;">진행중</div></div>'
         + '</div>';
 
     myCalls.forEach(function(b) {
         var st    = b.status || '배정완료';
         var color = statusColor[st] || '#999';
-        var dt    = b.acceptedAt
-            ? new Date(b.acceptedAt).toLocaleString('ko-KR')
-            : (b.dateStr || '');
-        var facility = b.facilityRequest
-            ? '<span>🔧</span><span style="color:#007bff;font-weight:bold;">시설보완 요청</span>'
-            : '';
-        var memo = b.memo
-            ? '<span>📝</span><span style="color:#666;">' + b.memo + '</span>'
-            : '';
+        var dt    = b.acceptedAt ? new Date(b.acceptedAt).toLocaleString('ko-KR') : (b.dateStr || '');
+        var facility = b.facilityRequest ? '<div style="color:#007bff;font-weight:bold;">🔧 시설보완 요청</div>' : '';
+        var memo     = b.memo ? '<div style="color:#666;">📝 ' + b.memo + '</div>' : '';
+        var bid = b.id || '';
 
-        html += '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.05);border-left:4px solid ' + color + ';">'
-            + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
-            + '<div style="font-weight:900;font-size:0.95rem;color:#111;">' + b.name + '</div>'
-            + '<span style="background:' + color + ';color:white;padding:3px 10px;border-radius:20px;font-size:0.7rem;font-weight:bold;white-space:nowrap;">' + st + '</span>'
-            + '</div>'
-            + '<div style="display:grid;grid-template-columns:18px 1fr;gap:4px 8px;font-size:0.83rem;color:#444;margin-bottom:10px;">'
-            + '<span>📞</span><span><a href="tel:' + b.phone + '" style="color:#1971c2;font-weight:bold;">' + b.phone + '</a></span>'
-            + '<span>📍</span><span>' + b.address + '</span>'
-            + '<span>📐</span><span>' + b.size + '</span>'
-            + facility
-            + memo
-            + '<span>🕐</span><span style="font-size:0.74rem;color:#bbb;">' + dt + '</span>'
-            + '</div>'
-            + '<div style="display:flex;gap:6px;">'
-            + ['출동중','완료','취소'].map(function(s) {
-                var bg    = s==='완료' ? '#27ae60' : s==='출동중' ? '#fd7e14' : '#eee';
-                var fc    = s==='취소' ? '#888' : 'white';
-                var label = s==='완료' ? '✅ 완료' : s==='출동중' ? '🚗 출동중' : '❌ 취소';
-                var bold  = st===s ? '900' : 'bold';
-                return '<button onclick="changeStatus('' + b.id + '','' + s + '')" style="flex:1;padding:8px 4px;border:none;border-radius:8px;font-size:0.72rem;font-weight:' + bold + ';cursor:pointer;background:' + bg + ';color:' + fc + ';">' + label + '</button>';
-            }).join('')
-            + '</div></div>';
+        html += '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.05);border-left:4px solid ' + color + ';">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+        html += '<div style="font-weight:900;font-size:0.95rem;color:#111;">' + (b.name||'') + '</div>';
+        html += '<span style="background:' + color + ';color:white;padding:3px 10px;border-radius:20px;font-size:0.7rem;font-weight:bold;">' + st + '</span>';
+        html += '</div>';
+        html += '<div style="font-size:0.83rem;color:#444;line-height:1.8;margin-bottom:10px;">';
+        html += '<div>📞 <a href="tel:' + (b.phone||'') + '" style="color:#1971c2;font-weight:bold;">' + (b.phone||'') + '</a></div>';
+        html += '<div>📍 ' + (b.address||'') + '</div>';
+        html += '<div>📐 ' + (b.size||'') + '</div>';
+        html += facility + memo;
+        html += '<div style="font-size:0.74rem;color:#bbb;">🕐 ' + dt + '</div>';
+        html += '</div>';
+        html += '<div style="display:flex;gap:6px;">';
+        html += '<button data-bid="' + bid + '" data-st="출동중" onclick="myCallStatus(this)" style="flex:1;padding:8px 4px;border:none;border-radius:8px;font-size:0.72rem;font-weight:bold;cursor:pointer;background:' + (st==='출동중'?'#fd7e14':'#f0f0f0') + ';color:' + (st==='출동중'?'white':'#555') + ';">🚗 출동중</button>';
+        html += '<button data-bid="' + bid + '" data-st="완료" onclick="myCallStatus(this)" style="flex:1;padding:8px 4px;border:none;border-radius:8px;font-size:0.72rem;font-weight:bold;cursor:pointer;background:' + (st==='완료'?'#27ae60':'#f0f0f0') + ';color:' + (st==='완료'?'white':'#555') + ';">✅ 완료</button>';
+        html += '<button data-bid="' + bid + '" data-st="취소" onclick="myCallStatus(this)" style="flex:1;padding:8px 4px;border:none;border-radius:8px;font-size:0.72rem;font-weight:bold;cursor:pointer;background:' + (st==='취소'?'#aaa':'#f0f0f0') + ';color:' + (st==='취소'?'white':'#888') + ';">❌ 취소</button>';
+        html += '</div></div>';
     });
 
     listEl.innerHTML = html;
 };
+
+// 내 콜 상태 변경 (data 속성 방식 - onclick 따옴표 충돌 방지)
+window.myCallStatus = function(btn) {
+    var bid = btn.getAttribute('data-bid');
+    var st  = btn.getAttribute('data-st');
+    if (bid && st) changeStatus(bid, st);
+};
+
 
 // 콜 수락
 window.acceptCall = async function(bkId, name, phone) {
