@@ -597,7 +597,7 @@ function loadMyBk(){
   });
 }
 
-// 공개 작업자
+// 공개 작업자 (전화번호 비공개 - 콜수락 후만 공개)
 function loadPubWorkers(){
   var el=document.getElementById('pub-wk-list');
   DB.ref('users').on('value',function(snap){
@@ -612,10 +612,15 @@ function loadPubWorkers(){
     var html='';
     wk.forEach(function(w){
       var st=w.workerStatus||'대기중';
-      html+='<div class="w-pub"><div>'
+      var areaText=getAreaSummary(w); // 간결한 지역 요약
+      html+='<div class="w-pub"><div style="flex:1;">'
         +'<div class="fw-bold" style="font-size:.9rem;"><span class="dot '+(sm[st]||'dot-x')+'"></span>'+w.name+'</div>'
-        +'<div class="small fw-bold '+(st==='대기중'?'text-success':'text-secondary')+'">'+(lm[st]||st)+' / '+(w.area||'전지역')+'</div>'
-        +'</div>'+(w.phone?'<a href="tel:'+w.phone+'" class="cbtn">📞 전화하기</a>':'')+'</div>';
+        +(w.company?'<div style="font-size:.72rem;color:#e74c3c;font-weight:700;">🏢 '+w.company+'</div>':'')
+        +'<div class="small '+(st==='대기중'?'text-success fw-bold':'text-secondary')+'">'+(lm[st]||st)+'</div>'
+        +'<div style="font-size:.75rem;color:#777;margin-top:2px;">📍 '+areaText+'</div>'
+        +'</div>'
+        // 전화번호 미공개 - 예약 접수 후 작업자 배정 시 공개
+        +'</div>';
     });
     el.innerHTML=html;
   });
