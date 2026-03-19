@@ -201,9 +201,7 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
 <div id="s-about" class="screen pg">
   <div class="pg-ttl">📢 서비스 소개</div>
   <div class="bluebox text-center">🛡️ [본사 보장제 정책]<br>불친절하거나 납득 못할 서비스 시 일부 또는 전액 환불 보장</div>
-  <h5 class="fw-bold mb-3" style="font-size:1rem;">⚡ 실시간 출동대기 명단</h5>
-  <div id="pub-wk-list"><div class="load">⏳ 불러오는 중...</div></div>
-  <div class="p-4 bg-dark text-white rounded-4 mb-3 mt-3">
+  <div class="p-4 bg-dark text-white rounded-4 mb-3">
     <div class="mb-2"><span style="background:#e74c3c;color:#fff;font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:20px;">PROFESSIONAL</span></div>
     <h6 class="fw-bold mb-2">🏢 검증된 전문 업체만 엄선합니다</h6>
     <p class="small lh-lg mb-0" style="opacity:.85;">저희 플랫폼의 대표는 방역 업계에서 오랜 현장 경력을 보유한 전문가입니다. 검증된 업체만을 엄격히 선별하여 서비스를 제공하고 있습니다.</p>
@@ -213,6 +211,14 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
     <p>• 바퀴벌레는 어디든 들어갈 수 있어 시야에 없는 경우 못 잡을 수도 있습니다.<br><br>
     • 작업을 받는다고 한 마리도 안 보인다는 의미는 아니며, 유입 경로 차단, 전용 약제 작업 등으로 최대한 덜 보이고 내부 서식을 못 하게 막는 작업입니다.<br><br>
     • 개체가 너무 많거나 건물 문제가 심각한 경우 추가 작업이 필요할 수 있습니다.</p>
+  </div>
+  <!-- 출동대기 명단 - 하단, 클릭시 토글 -->
+  <div style="border:1px solid #eee;border-radius:14px;overflow:hidden;margin-bottom:16px;">
+    <div onclick="toggleEl('pub-wk-list')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#f8f9fa;cursor:pointer;">
+      <div style="font-weight:700;font-size:.95rem;">⚡ 실시간 출동대기 명단</div>
+      <span style="font-size:.8rem;color:#aaa;" id="pub-wk-arrow">펼치기 ▼</span>
+    </div>
+    <div id="pub-wk-list" style="display:none;padding:12px;"></div>
   </div>
   <button class="btn btn-light w-100" style="border-radius:12px;padding:14px;font-weight:700;" onclick="goTo('main')">뒤로가기</button>
 </div>
@@ -298,7 +304,7 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
     <!-- 마스터 헤더 -->
     <div id="master-call-bar" style="display:none;background:linear-gradient(135deg,#1a1a2e,#16213e);padding:14px 16px;color:#fff;">
       <div style="font-size:.9rem;font-weight:900;">🚨 실시간 콜 모니터링</div>
-      <div style="font-size:.75rem;opacity:.6;margin-top:4px;">마스터 · 작업자 탭에서 상태/지역 변경 가능</div>
+      <div style="font-size:.75rem;opacity:.6;margin-top:4px;">작업자 탭에서 상태/지역 변경 가능</div>
     </div>
     <!-- 지역 설정 (작업자 대기중일 때) -->
     <div id="area-setting-wrap" style="background:#fff;padding:14px;border-bottom:1px solid #eee;display:none;">
@@ -426,7 +432,7 @@ function goTo(key) {
   window.scrollTo(0, 0);
   if (key === 'main') document.body.classList.add('locked');
   else document.body.classList.remove('locked');
-  if (key === 'about') loadPubWorkers();
+  // about: 출동명단은 클릭시 로드
   if (key === 'area') loadAreaMap();
   if (key === 'admin-panel') {
     startListeners();
@@ -612,7 +618,16 @@ function loadPubWorkers() {
 }
 function toggleEl(id) {
   var el = document.getElementById(id);
-  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  if (!el) return;
+  var isHidden = el.style.display === 'none' || el.style.display === '';
+  el.style.display = isHidden ? 'block' : 'none';
+  // arrow 텍스트 업데이트
+  var arrow = document.getElementById('pub-wk-arrow');
+  if (arrow && id === 'pub-wk-list') {
+    arrow.textContent = isHidden ? '접기 ▲' : '펼치기 ▼';
+    // 명단 펼칠 때 데이터 로드
+    if (isHidden) loadPubWorkers();
+  }
 }
 
 // ── 지역 요약
@@ -972,7 +987,14 @@ function showAreaSelector() {
   if (CU && CU.coverAreas) CU.coverAreas.forEach(function(a) { saved[a] = true; });
   var html = '';
   Object.keys(REGIONS).forEach(function(region) {
-    html += '<div style="margin-bottom:10px;"><div style="font-size:.78rem;font-weight:700;color:#555;margin-bottom:6px;">' + region + '</div><div style="display:flex;flex-wrap:wrap;gap:5px;">';
+    var allChecked = REGIONS[region].every(function(a) { return saved[a]; });
+    html += '<div style="margin-bottom:12px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
+      + '<div style="font-size:.78rem;font-weight:700;color:#333;">' + region + '</div>'
+      + '<button data-region="' + region + '" onclick="toggleRegionAll(this)" style="font-size:.7rem;padding:3px 10px;border:1px solid ' + (allChecked ? '#27ae60' : '#ddd') + ';border-radius:20px;background:' + (allChecked ? '#27ae60' : '#fff') + ';color:' + (allChecked ? '#fff' : '#555') + ';cursor:pointer;font-weight:700;">'
+      + (allChecked ? '✅ 전체선택됨' : region + ' 전체선택') + '</button>'
+      + '</div>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:5px;">';
     REGIONS[region].forEach(function(a) {
       html += '<label style="font-size:.75rem;background:' + (saved[a] ? '#e8f5e9' : '#f5f5f5') + ';padding:5px 9px;border-radius:20px;cursor:pointer;border:1px solid ' + (saved[a] ? '#a5d6a7' : '#eee') + '">'
         + '<input type="checkbox" name="area-cb" value="' + a + '" ' + (saved[a] ? 'checked' : '') + ' style="width:14px;height:14px;margin-right:3px;">' + a + '</label>';
@@ -980,6 +1002,31 @@ function showAreaSelector() {
     html += '</div></div>';
   });
   sel.innerHTML = html;
+}
+
+// 지역 전체선택/해제 토글
+function toggleRegionAll(btn) {
+  var region = btn.getAttribute('data-region');
+  var areas = REGIONS[region];
+  if (!areas) return;
+  // 현재 모두 체크됐는지 확인
+  var allChecked = areas.every(function(a) {
+    var cb = document.querySelector('input[name="area-cb"][value="' + a + '"]');
+    return cb && cb.checked;
+  });
+  // 반전
+  areas.forEach(function(a) {
+    var cb = document.querySelector('input[name="area-cb"][value="' + a + '"]');
+    if (cb) cb.checked = !allChecked;
+  });
+  // 버튼 스타일 업데이트
+  if (!allChecked) {
+    btn.style.background = '#27ae60'; btn.style.color = '#fff';
+    btn.style.borderColor = '#27ae60'; btn.textContent = '✅ 전체선택됨';
+  } else {
+    btn.style.background = '#fff'; btn.style.color = '#555';
+    btn.style.borderColor = '#ddd'; btn.textContent = region + ' 전체선택';
+  }
 }
 function saveAreaSetting() {
   var cbs = document.querySelectorAll('input[name="area-cb"]:checked');
@@ -1021,7 +1068,7 @@ function renderDash() {
       + (isMaster ? '<button data-bid="' + b.id + '" onclick="delBkBtn(this)" style="background:none;border:none;color:#e74c3c;font-size:1rem;cursor:pointer;">🗑</button>' : '')
       + '</div></div>'
       + '<div style="font-size:.82rem;color:#555;">'
-      + '<p style="margin:0;">📞 <a href="tel:' + b.phone + '" style="color:#1971c2;font-weight:700;">' + b.phone + '</a></p>'
+      + (isMaster ? '<p style="margin:0;">📞 <a href="tel:' + b.phone + '" style="color:#1971c2;font-weight:700;">' + b.phone + '</a></p>' : '')
       + '<p style="margin:0;">📍 ' + b.address + '</p>'
       + (b.workerName ? '<p style="margin:0;">👷 ' + b.workerName + '</p>' : '')
       + '</div></div>';
@@ -1165,7 +1212,7 @@ function openWkModal(el) {
   } else { areaTagHtml += '<span style="color:#aaa;font-size:.8rem;">지역 미설정</span>'; }
   areaTagHtml += '</div>';
   var html = '<div style="font-size:.85rem;color:#444;line-height:2;">'
-    + '<div>📞 <b>' + (w.phone || '미등록') + '</b></div>'
+    + (isMaster ? '<div>📞 <b>' + (w.phone || '미등록') + '</b></div>' : '<div>📞 문의: <a href="tel:01025895746" style="color:#1971c2;font-weight:700;">01025895746 (마스터)</a></div>')
     + '<div>🏢 소속: <b>' + (w.company || '미입력') + '</b></div>'
     + '<div>📊 상태: <b>' + (lm[w.workerStatus || '대기중'] || w.workerStatus) + '</b></div>'
     + '<div>📍 담당 지역: ' + getAreaSummary(w) + '</div>'
@@ -1190,7 +1237,13 @@ function renderWkAreaSel(key, saved) {
   if (saved && saved.forEach) saved.forEach(function(a) { savedMap[a] = true; });
   var html = '';
   Object.keys(REGIONS).forEach(function(region) {
-    html += '<div style="margin-bottom:8px;"><div style="font-size:.75rem;font-weight:700;color:#555;margin-bottom:4px;">' + region + '</div><div style="display:flex;flex-wrap:wrap;gap:4px;">';
+    var allChk = REGIONS[region].every(function(a) { return savedMap[a]; });
+    html += '<div style="margin-bottom:10px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
+      + '<div style="font-size:.75rem;font-weight:700;color:#555;">' + region + '</div>'
+      + '<button data-mkey="' + key + '" data-region="' + region + '" onclick="toggleMasterRegionAll(this)" style="font-size:.68rem;padding:2px 8px;border:1px solid ' + (allChk ? '#27ae60' : '#ddd') + ';border-radius:20px;background:' + (allChk ? '#27ae60' : '#fff') + ';color:' + (allChk ? '#fff' : '#555') + ';cursor:pointer;">'
+      + (allChk ? '✅ 전체' : '전체선택') + '</button>'
+      + '</div><div style="display:flex;flex-wrap:wrap;gap:4px;">';
     REGIONS[region].forEach(function(a) {
       html += '<label style="font-size:.72rem;background:' + (savedMap[a] ? '#e8f5e9' : '#f5f5f5') + ';padding:4px 8px;border-radius:16px;cursor:pointer;border:1px solid ' + (savedMap[a] ? '#a5d6a7' : '#eee') + '">'
         + '<input type="checkbox" name="mwk-' + key + '" value="' + a + '" ' + (savedMap[a] ? 'checked' : '') + ' style="width:12px;height:12px;margin-right:3px;">' + a + '</label>';
@@ -1198,6 +1251,27 @@ function renderWkAreaSel(key, saved) {
     html += '</div></div>';
   });
   el.innerHTML = html;
+}
+
+function toggleMasterRegionAll(btn) {
+  var key = btn.getAttribute('data-mkey');
+  var region = btn.getAttribute('data-region');
+  var areas = REGIONS[region]; if (!areas) return;
+  var allChk = areas.every(function(a) {
+    var cb = document.querySelector('input[name="mwk-' + key + '"][value="' + a + '"]');
+    return cb && cb.checked;
+  });
+  areas.forEach(function(a) {
+    var cb = document.querySelector('input[name="mwk-' + key + '"][value="' + a + '"]');
+    if (cb) cb.checked = !allChk;
+  });
+  if (!allChk) {
+    btn.style.background = '#27ae60'; btn.style.color = '#fff';
+    btn.style.borderColor = '#27ae60'; btn.textContent = '✅ 전체';
+  } else {
+    btn.style.background = '#fff'; btn.style.color = '#555';
+    btn.style.borderColor = '#ddd'; btn.textContent = '전체선택';
+  }
 }
 function saveMasterEdit(btn) {
   var key = btn.getAttribute('data-wkkey');
@@ -1235,7 +1309,7 @@ function renderMembers(snap) {
   });
   pe.innerHTML = pend.length ? pend.map(function(m) {
     return '<div class="memc"><div><strong>' + m.name + '</strong> <span class="text-muted small">(' + m.id + ')</span></div>'
-      + '<div class="text-muted small">' + m.phone + ' · ' + (m.area || '') + '</div>'
+      + (CU && CU.role === 'master' ? '<div class="text-muted small">' + m.phone + ' · ' + (m.area || '') + '</div>' : '<div class="text-muted small">' + (m.area || '') + '</div>')
       + '<div class="mact"><button class="mb2 mb2-g" data-key="' + m.key + '" onclick="apprBtn(this)">✅ 승인</button>'
       + '<button class="mb2 mb2-r" data-key="' + m.key + '" onclick="rejBtn(this)">❌ 거절</button></div></div>';
   }).join('') : '<p class="text-muted small">대기 없음</p>';
@@ -1243,7 +1317,7 @@ function renderMembers(snap) {
     return '<div class="memc"><div><strong>' + m.name + '</strong>'
       + ' <span class="badge ' + (m.role === 'admin' ? 'bg-primary' : 'bg-secondary') + '" style="font-size:.62rem;">' + (m.role === 'admin' ? '관리자' : '작업자') + '</span>'
       + ' <span class="text-muted small">(' + m.id + ')</span></div>'
-      + '<div class="text-muted small">' + m.phone + ' · ' + (m.area || '') + '</div>'
+      + (CU && CU.role === 'master' ? '<div class="text-muted small">' + m.phone + ' · ' + (m.area || '') + '</div>' : '<div class="text-muted small">' + (m.area || '') + '</div>')
       + '<div class="mact">'
       + (m.role === 'worker' ? '<button class="mb2 mb2-b" data-key="' + m.key + '" onclick="proBtn(this)">⬆️ 관리자</button>' : '<button class="mb2 mb2-x" data-key="' + m.key + '" onclick="demBtn(this)">⬇️ 작업자</button>')
       + '<button class="mb2 mb2-r" data-key="' + m.key + '" onclick="revBtn(this)">🚫 정지</button>'
