@@ -1177,7 +1177,6 @@ function assignBtn(btn){
     workerPhone:pe?pe.value.trim():''
   },function(err){if(!err) toast('배정 완료');});
 }
-function filterBk(st){BK_FILTER=st;renderBkList();}
 function changeStatus(bid,st){
   DB.ref('bookings/'+bid).update({status:st},function(err){if(!err) toast('상태: '+st);});
 }
@@ -1266,22 +1265,20 @@ function openWkModal(el){
       +'<label style="font-size:.78rem;color:#666;display:block;margin-bottom:6px;">담당 지역 변경</label>'
       +'<div id="wk-area-sel-'+key+'" style="max-height:180px;overflow-y:auto;border:1px solid #eee;border-radius:10px;padding:10px;"></div>'
       +'</div>'
-      +'<button onclick="saveMasterWkEdit(''+key+'')" style="width:100%;padding:12px;border:none;border-radius:12px;background:#e74c3c;color:#fff;font-weight:700;font-size:.9rem;cursor:pointer;">✅ 저장</button>';
-    html+='<script>setTimeout(function(){renderWkAreaSel("'+key+'",'+JSON.stringify(areas)+');},50);<\/script>';
+      +'<button data-wkkey="'+key+'" onclick="saveMasterWkEditBtn(this)" style="width:100%;padding:12px;border:none;border-radius:12px;background:#e74c3c;color:#fff;font-weight:700;font-size:.9rem;cursor:pointer;">✅ 저장</button>';
+    // script 태그 대신 setTimeout으로 직접 처리 (아래서 호출)
   }
   document.getElementById('wk-modal-body').innerHTML=html;
   document.getElementById('wk-modal').style.display='flex';
+  // 마스터 지역선택 UI 렌더
+  if(isMaster) setTimeout(function(){renderWkAreaSel(key,areas);},50);
 }
 function renderWkAreaSel(key,saved){
   var el=document.getElementById('wk-area-sel-'+key); if(!el) return;
   var savedMap={};
-  saved.forEach(function(a){savedMap[a]=true;});
+  if(saved&&saved.forEach) saved.forEach(function(a){savedMap[a]=true;});
   var html='';
-  var SEOUL_G=['강남구','강동구','강북구','강서구','관악구','광진구','구로구','금천구','노원구','도봉구','동대문구','동작구','마포구','서대문구','서초구','성동구','성북구','송파구','양천구','영등포구','용산구','은평구','종로구','중구','중랑구'];
-  var allR=Object.assign({'서울':SEOUL_G},REGIONS);
-  delete allR['서울']; // 중복 제거
-  var allRegions=Object.assign({'서울':SEOUL_G},REGIONS);
-  Object.keys(allRegions).forEach(function(region){
+  Object.keys(REGIONS).forEach(function(region){
     html+='<div style="margin-bottom:8px;"><div style="font-size:.75rem;font-weight:700;color:#555;margin-bottom:4px;">'+region+'</div><div style="display:flex;flex-wrap:wrap;gap:4px;">';
     allRegions[region].forEach(function(a){
       html+='<label style="font-size:.72rem;background:'+(savedMap[a]?'#e8f5e9':'#f5f5f5')+';padding:4px 8px;border-radius:16px;cursor:pointer;border:1px solid '+(savedMap[a]?'#a5d6a7':'#eee')+'">'
@@ -1297,6 +1294,10 @@ function masterChangeSt(btn){
   DB.ref('users/'+key).update({workerStatus:st},function(err){
     if(!err){toast('상태: '+st); closeWkModal();}
   });
+}
+function saveMasterWkEditBtn(btn){
+  var key=btn.getAttribute('data-wkkey');
+  saveMasterWkEdit(key);
 }
 function saveMasterWkEdit(key){
   var compEl=document.getElementById('wk-company-'+key);
