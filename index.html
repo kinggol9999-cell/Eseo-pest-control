@@ -212,13 +212,25 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
     • 작업을 받는다고 한 마리도 안 보인다는 의미는 아니며, 유입 경로 차단, 전용 약제 작업 등으로 최대한 덜 보이고 내부 서식을 못 하게 막는 작업입니다.<br><br>
     • 개체가 너무 많거나 건물 문제가 심각한 경우 추가 작업이 필요할 수 있습니다.</p>
   </div>
-  <!-- 출동대기 명단 - 하단, 클릭시 토글 -->
+  <!-- 출동대기 명단 - 클릭시 토글 -->
   <div style="border:1px solid #eee;border-radius:14px;overflow:hidden;margin-bottom:16px;">
     <div onclick="toggleEl('pub-wk-list')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#f8f9fa;cursor:pointer;">
       <div style="font-weight:700;font-size:.95rem;">⚡ 실시간 출동대기 명단</div>
       <span style="font-size:.8rem;color:#aaa;" id="pub-wk-arrow">펼치기 ▼</span>
     </div>
     <div id="pub-wk-list" style="display:none;padding:12px;"></div>
+  </div>
+  <!-- 플랫폼 대표 연락처 -->
+  <div style="border:1px solid #eee;border-radius:14px;overflow:hidden;margin-bottom:16px;">
+    <div onclick="toggleEl('master-contact-wrap')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#f8f9fa;cursor:pointer;">
+      <div style="font-weight:700;font-size:.95rem;">📞 플랫폼 대표 연락처</div>
+      <span style="font-size:.8rem;color:#aaa;" id="master-contact-arrow">펼치기 ▼</span>
+    </div>
+    <div id="master-contact-wrap" style="display:none;padding:16px;">
+      <div id="master-call-status-pub" style="margin-bottom:12px;padding:10px 14px;border-radius:10px;font-size:.85rem;font-weight:700;">⏳ 로딩중...</div>
+      <a href="tel:01025895746" style="display:block;background:#212529;color:#fff;border-radius:12px;padding:14px;text-align:center;font-weight:700;font-size:1rem;text-decoration:none;">📞 01025895746 전화하기</a>
+      <p style="font-size:.78rem;color:#999;margin-top:10px;margin-bottom:0;text-align:center;">통화불가 시간: 오후 10시 ~ 오전 10시</p>
+    </div>
   </div>
   <button class="btn btn-light w-100" style="border-radius:12px;padding:14px;font-weight:700;" onclick="goTo('main')">뒤로가기</button>
 </div>
@@ -267,15 +279,14 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
 <!-- 관리자 패널 -->
 <div id="s-admin" class="screen">
   <div class="anav">
-    <div class="atab" data-tab="t-dash" onclick="showTab('t-dash')">📊 대시보드</div>
     <div class="atab on" data-tab="t-call" onclick="showTab('t-call')">🚨 실시간콜 <span class="cbadge" id="call-badge">0</span></div>
     <div class="atab" data-tab="t-bk" onclick="showTab('t-bk')">📋 예약관리</div>
     <div class="atab" data-tab="t-wk" onclick="showTab('t-wk')">👷 작업자</div>
     <div class="atab master-tab" data-tab="t-mem" onclick="showTab('t-mem')" style="display:none;">👥 회원관리</div>
   </div>
 
-  <!-- 대시보드 -->
-  <div id="t-dash" class="apg">
+  <!-- 대시보드 (숨김 - 탭에서 제거됨) -->
+  <div id="t-dash" class="apg" style="display:none!important;">
     <div class="sg">
       <div class="sc"><div class="sn" id="st-today">-</div><div class="sl">오늘 예약</div></div>
       <div class="sc"><div class="sn" id="st-pend">-</div><div class="sl">접수 대기</div></div>
@@ -303,8 +314,18 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
     </div>
     <!-- 마스터 헤더 -->
     <div id="master-call-bar" style="display:none;background:linear-gradient(135deg,#1a1a2e,#16213e);padding:14px 16px;color:#fff;">
-      <div style="font-size:.9rem;font-weight:900;">🚨 실시간 콜 모니터링</div>
-      <div style="font-size:.75rem;opacity:.6;margin-top:4px;">작업자 탭에서 상태/지역 변경 가능</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:.9rem;font-weight:900;">🚨 실시간 콜 모니터링</div>
+        <a href="tel:01025895746" style="background:rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:5px 12px;font-size:.75rem;font-weight:700;text-decoration:none;">📞 01025895746</a>
+      </div>
+      <div style="margin-top:10px;">
+        <div style="font-size:.72rem;opacity:.6;margin-bottom:5px;">대표 통화 상태</div>
+        <div style="display:flex;gap:8px;">
+          <button data-cs="available" onclick="setCallStatus(this)" style="flex:1;padding:7px 4px;border:none;border-radius:20px;font-size:.73rem;font-weight:700;cursor:pointer;background:rgba(39,174,96,.3);color:#7fffb0;" id="cs-available">📞 통화가능</button>
+          <button data-cs="busy" onclick="setCallStatus(this)" style="flex:1;padding:7px 4px;border:none;border-radius:20px;font-size:.73rem;font-weight:700;cursor:pointer;background:rgba(255,255,255,.1);color:rgba(255,255,255,.5);" id="cs-busy">🔕 통화불가</button>
+        </div>
+        <div id="master-call-status-label" style="font-size:.72rem;opacity:.7;margin-top:6px;">오전 10시 ~ 오후 10시 통화 가능</div>
+      </div>
     </div>
     <!-- 지역 설정 (작업자 대기중일 때) -->
     <div id="area-setting-wrap" style="background:#fff;padding:14px;border-bottom:1px solid #eee;display:none;">
@@ -319,7 +340,11 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
     <div style="padding:4px 14px 4px;border-top:1px solid #eee;font-size:.78rem;color:#999;font-weight:700;">
       📋 내가 수락한 콜 <span id="my-cnt" style="color:#27ae60;"></span>
     </div>
-    <div id="my-call-list" style="padding:0 14px 80px;"></div>
+    <div id="my-call-list" style="padding:0 14px 20px;"></div>
+    <div style="padding:0 14px 80px;">
+      <hr style="margin:0 0 14px;">
+      <button class="btn btn-outline-danger w-100" style="border-radius:12px;padding:14px;font-weight:700;" onclick="doLogout()">로그아웃</button>
+    </div>
   </div>
 
   <!-- 예약관리 -->
@@ -432,7 +457,7 @@ function goTo(key) {
   window.scrollTo(0, 0);
   if (key === 'main') document.body.classList.add('locked');
   else document.body.classList.remove('locked');
-  // about: 출동명단은 클릭시 로드
+  if (key === 'about') loadMasterCallStatus();
   if (key === 'area') loadAreaMap();
   if (key === 'admin-panel') {
     startListeners();
@@ -621,12 +646,15 @@ function toggleEl(id) {
   if (!el) return;
   var isHidden = el.style.display === 'none' || el.style.display === '';
   el.style.display = isHidden ? 'block' : 'none';
-  // arrow 텍스트 업데이트
-  var arrow = document.getElementById('pub-wk-arrow');
-  if (arrow && id === 'pub-wk-list') {
-    arrow.textContent = isHidden ? '접기 ▲' : '펼치기 ▼';
-    // 명단 펼칠 때 데이터 로드
+  if (id === 'pub-wk-list') {
+    var arrow = document.getElementById('pub-wk-arrow');
+    if (arrow) arrow.textContent = isHidden ? '접기 ▲' : '펼치기 ▼';
     if (isHidden) loadPubWorkers();
+  }
+  if (id === 'master-contact-wrap') {
+    var arrow2 = document.getElementById('master-contact-arrow');
+    if (arrow2) arrow2.textContent = isHidden ? '접기 ▲' : '펼치기 ▼';
+    if (isHidden) loadMasterCallStatus();
   }
 }
 
@@ -703,6 +731,7 @@ function doLogin() {
     setTimeout(function() {
       renderStCard(found.workerStatus || '대기중');
       showTab('t-call');
+      if (found.role === 'master') loadMasterCallStatus();
       if (found.role !== 'master' && (found.workerStatus || '대기중') === '대기중') showAreaSelector();
     }, 300);
   });
@@ -751,6 +780,57 @@ function showTab(id) {
   document.querySelectorAll('.atab').forEach(function(el) { el.classList.remove('on'); });
   var c = document.getElementById(id); if (c) c.classList.add('on');
   var t = document.querySelector('[data-tab="' + id + '"]'); if (t) t.classList.add('on');
+}
+
+// ── 통화 상태 설정 (마스터)
+function setCallStatus(btn) {
+  var status = btn.getAttribute('data-cs');
+  DB.ref('users/master').update({callStatus: status}, function(err) {
+    if (!err) {
+      updateCallStatusUI(status);
+      toast(status === 'available' ? '📞 통화가능 상태로 변경' : '🔕 통화불가 상태로 변경');
+    }
+  });
+}
+function updateCallStatusUI(status) {
+  var avBtn = document.getElementById('cs-available');
+  var buBtn = document.getElementById('cs-busy');
+  var label = document.getElementById('master-call-status-label');
+  var pubStatus = document.getElementById('master-call-status-pub');
+  if (avBtn) {
+    avBtn.style.background = status === 'available' ? 'rgba(39,174,96,.7)' : 'rgba(255,255,255,.1)';
+    avBtn.style.color = status === 'available' ? '#fff' : 'rgba(255,255,255,.5)';
+  }
+  if (buBtn) {
+    buBtn.style.background = status === 'busy' ? 'rgba(231,76,60,.6)' : 'rgba(255,255,255,.1)';
+    buBtn.style.color = status === 'busy' ? '#fff' : 'rgba(255,255,255,.5)';
+  }
+  if (label) {
+    label.textContent = status === 'available'
+      ? '✅ 현재 통화 가능 (오전 10시 ~ 오후 10시)'
+      : '🔕 현재 통화 불가 · 오전 10시 이후 연락 주세요';
+  }
+  if (pubStatus) {
+    if (status === 'available') {
+      pubStatus.style.background = '#e8f5e9';
+      pubStatus.style.color = '#2e7d32';
+      pubStatus.textContent = '✅ 현재 통화 가능합니다';
+    } else {
+      pubStatus.style.background = '#fff3e0';
+      pubStatus.style.color = '#e65100';
+      pubStatus.textContent = '🔕 현재 통화 불가 · 오전 10시 이후 연락 주세요';
+    }
+  }
+}
+function loadMasterCallStatus() {
+  DB.ref('users/master/callStatus').once('value', function(snap) {
+    var status = snap.val() || 'available';
+    updateCallStatusUI(status);
+  });
+  // 실시간 구독 - 고객화면도 업데이트
+  DB.ref('users/master/callStatus').on('value', function(snap) {
+    updateCallStatusUI(snap.val() || 'available');
+  });
 }
 
 // ── 리스너 시작
@@ -1212,7 +1292,7 @@ function openWkModal(el) {
   } else { areaTagHtml += '<span style="color:#aaa;font-size:.8rem;">지역 미설정</span>'; }
   areaTagHtml += '</div>';
   var html = '<div style="font-size:.85rem;color:#444;line-height:2;">'
-    + (isMaster ? '<div>📞 <b>' + (w.phone || '미등록') + '</b></div>' : '<div>📞 문의: <a href="tel:01025895746" style="color:#1971c2;font-weight:700;">01025895746 (마스터)</a></div>')
+    + (isMaster ? '<div>📞 <b>' + (w.phone || '미등록') + '</b></div>' : '')
     + '<div>🏢 소속: <b>' + (w.company || '미입력') + '</b></div>'
     + '<div>📊 상태: <b>' + (lm[w.workerStatus || '대기중'] || w.workerStatus) + '</b></div>'
     + '<div>📍 담당 지역: ' + getAreaSummary(w) + '</div>'
