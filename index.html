@@ -541,10 +541,15 @@ function loadMyBk(){
     });
     res.sort(function(a,b){return b.createdAt-a.createdAt;});
     if(!res.length){el.innerHTML='<div class="empty"><div class="ei">📭</div><p>예약 내역이 없습니다</p></div>';return;}
-    var html='';
+    // 통계
+    var doneC=res.filter(function(b){return b.status==='완료';}).length;
+    var html='<div style="background:#f8f9fa;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:.82rem;color:#555;">'
+      +'📋 전체 <b>'+res.length+'</b>건 · 완료 <b style="color:#27ae60;">'+doneC+'</b>건</div>';
     res.forEach(function(b){
       var matched=b.status==='배정완료'||b.status==='출동중';
-      html+='<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.05);">'
+      var done=b.status==='완료';
+      var borderColor=done?'#27ae60':matched?'#17a2b8':'#eee';
+      html+='<div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.05);border-left:4px solid '+borderColor+';">'
         +'<div class="d-flex justify-content-between align-items-start mb-2">'
         +'<div><strong>'+b.name+'</strong> <span class="text-muted small">· '+b.size+'</span></div>'
         +'<span class="st-b st-'+b.status+'">'+b.status+'</span></div>'
@@ -552,14 +557,14 @@ function loadMyBk(){
         +(b.facilityRequest?'<p class="small text-primary fw-bold mb-1">✅ 시설보완 요청</p>':'')
         +(b.memo?'<p class="small text-muted mb-1">📝 '+b.memo+'</p>':'')
         +'<p class="small text-muted mb-0" style="font-size:.72rem;">'+(b.dateStr||'')+'</p>';
-      if(matched&&b.workerName){
-        html+='<div style="background:#e8f5e9;border-radius:10px;padding:10px;margin-top:8px;">'
-          +'<p class="small mb-1 fw-bold text-success">✅ 작업자 매칭 완료</p>'
+      if((matched||done)&&b.workerName){
+        html+='<div style="background:'+(done?'#e8f5e9':'#e3f2fd')+';border-radius:10px;padding:10px;margin-top:8px;">'
+          +'<p class="small mb-1 fw-bold" style="color:'+(done?'#2e7d32':'#1565c0')+'">'+(done?'✅ 서비스 완료':'✅ 작업자 매칭')+'</p>'
           +'<p class="small mb-1">👷 담당: <b>'+b.workerName+'</b></p>'
-          +(b.workerPhone?'<a href="tel:'+b.workerPhone+'" style="display:inline-block;background:#212529;color:#fff;border-radius:8px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;">📞 작업자 전화</a>':'')
+          +((matched||done)&&b.workerPhone?'<a href="tel:'+b.workerPhone+'" style="display:inline-block;background:#212529;color:#fff;border-radius:8px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;">📞 작업자 전화</a>':'')
           +'</div>';
-      } else if(!matched){
-        html+='<p class="small text-muted mt-1">📞 매칭 후 연락처 공개</p>';
+      } else if(!matched&&!done){
+        html+='<p class="small text-muted mt-1">📞 작업자 매칭 후 연락처 공개</p>';
       }
       html+='</div>';
     });
@@ -895,20 +900,20 @@ var REGIONS = {
   '경기북부': ['의정부시','양주시','동두천시','포천시','연천군','가평군','남양주시','구리시'],
   '경기남부': ['수원시','성남시','용인시','안양시','안산시','화성시','평택시','시흥시','군포시','의왕시','하남시','오산시','이천시','안성시','여주시','과천시','광주시'],
   '경기서부': ['부천시','광명시','김포시','파주시','고양시'],
-  '인천': ['중구','동구','미추홀구','연수구','남동구','부평구','계양구','서구','강화군','옹진군'],
+  '인천': ['인천중구','인천동구','미추홀구','연수구','남동구','부평구','계양구','인천서구','강화군','옹진군'],
   '강원': ['춘천시','원주시','강릉시','동해시','태백시','속초시','삼척시'],
   '충북': ['청주시','충주시','제천시','보은군','옥천군','영동군','증평군','진천군','괴산군','음성군','단양군'],
   '충남': ['천안시','공주시','보령시','아산시','서산시','논산시','계룡시','당진시'],
-  '대전': ['동구','중구','서구','유성구','대덕구'],
+  '대전': ['대전동구','대전중구','대전서구','유성구','대덕구'],
   '세종': ['세종시'],
   '전북': ['전주시','군산시','익산시','정읍시','남원시','김제시'],
   '전남': ['목포시','여수시','순천시','나주시','광양시'],
-  '광주': ['동구','서구','남구','북구','광산구'],
+  '광주': ['광주동구','광주서구','광주남구','광주북구','광산구'],
   '경북': ['포항시','경주시','김천시','안동시','구미시','영주시','영천시','상주시','문경시','경산시'],
   '경남': ['창원시','진주시','통영시','사천시','김해시','밀양시','거제시','양산시'],
-  '부산': ['중구','서구','동구','영도구','부산진구','동래구','남구','북구','해운대구','사하구','금정구','강서구','연제구','수영구','사상구','기장군'],
-  '대구': ['중구','동구','서구','남구','북구','수성구','달서구','달성군'],
-  '울산': ['중구','남구','동구','북구','울주군'],
+  '부산': ['부산중구','부산서구','부산동구','영도구','부산진구','동래구','부산남구','부산북구','해운대구','사하구','금정구','부산강서구','연제구','수영구','사상구','기장군'],
+  '대구': ['대구중구','대구동구','대구서구','대구남구','대구북구','수성구','달서구','달성군'],
+  '울산': ['울산중구','울산남구','울산동구','울산북구','울주군'],
   '제주': ['제주시','서귀포시']
 };
 
@@ -1011,25 +1016,50 @@ function renderStCard(st){
 // 대시보드
 function renderDash(){
   var today=new Date().toLocaleDateString('ko-KR');
-  var tc=ALL_BK.filter(function(b){return (b.dateStr||'').startsWith(today);}).length;
+  var isMaster=CU&&CU.role==='master';
+  // 마스터: 전체, 작업자: 자기 것만
+  var myBk=isMaster?ALL_BK:ALL_BK.filter(function(b){
+    return CU&&(b.acceptedBy===CU.id||b.workerName===CU.name||b.acceptedBy===CU.key);
+  });
+  var tc=myBk.filter(function(b){return (b.dateStr||'').startsWith(today);}).length;
   var pc=ALL_BK.filter(function(b){return b.status==='접수중';}).length;
   var e1=document.getElementById('st-today'); if(e1) e1.textContent=tc;
   var e2=document.getElementById('st-pend');  if(e2) e2.textContent=pc;
-  var e3=document.getElementById('st-total'); if(e3) e3.textContent=ALL_BK.length;
+  var e3=document.getElementById('st-total'); if(e3) e3.textContent=myBk.length;
   var dl=document.getElementById('dash-list'); if(!dl) return;
-  var rec=ALL_BK.slice(0,5);
-  if(!rec.length){dl.innerHTML='<div class="empty"><p>예약이 없습니다</p></div>';return;}
+  var rec=myBk.slice(0,5);
+  if(!rec.length){dl.innerHTML='<div class="empty"><p>'+(isMaster?'예약이 없습니다':'수락한 예약이 없습니다')+'</p></div>';return;}
   var html='';
   rec.forEach(function(b){
     html+='<div class="bki"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">'
       +'<div><strong>'+b.name+'</strong> <span class="text-muted small">· '+b.size+'</span>'
       +'<div class="text-muted" style="font-size:.72rem;">'+(b.dateStr||'')+'</div></div>'
-      +'<span class="st-b st-'+b.status+'">'+b.status+'</span></div>'
+      +'<div style="display:flex;align-items:center;gap:6px;">'
+      +'<span class="st-b st-'+b.status+'">'+b.status+'</span>'
+      +(isMaster?'<button data-bid="'+b.id+'" onclick="delBk(this)" style="background:none;border:none;color:#e74c3c;font-size:1rem;cursor:pointer;padding:2px;">🗑</button>':'')
+      +'</div></div>'
       +'<div style="font-size:.82rem;color:#555;line-height:1.75;">'
       +'<p style="margin:0;">📞 <a href="tel:'+b.phone+'" style="color:#1971c2;font-weight:700;">'+b.phone+'</a></p>'
-      +'<p style="margin:0;">📍 '+b.address+'</p></div></div>';
+      +'<p style="margin:0;">📍 '+b.address+'</p>'
+      +(b.workerName?'<p style="margin:0;">👷 '+b.workerName+'</p>':'')
+      +'</div></div>';
   });
+  // 마스터: 전체 누적 통계 표시
+  if(isMaster){
+    var doneAll=ALL_BK.filter(function(b){return b.status==='완료';}).length;
+    html='<div style="background:#fff3cd;border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:.82rem;color:#856404;">'
+      +'📊 전체 예약 '+ALL_BK.length+'건 · 완료 '+doneAll+'건 · 접수대기 '+pc+'건</div>'+html;
+  }
   dl.innerHTML=html;
+}
+function delBk(btn){
+  var bid=btn.getAttribute('data-bid');
+  if(!bid) return;
+  if(!confirm('이 예약 기록을 삭제하겠습니까?')) return;
+  DB.ref('bookings/'+bid).remove(function(err){
+    if(!err) toast('삭제 완료');
+    else toast('오류: '+err.message);
+  });
 }
 
 // 예약 목록
