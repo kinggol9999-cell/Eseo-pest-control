@@ -141,8 +141,19 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
     <input type="text" id="bk-name" class="form-control form-control-lg" placeholder="홍길동"></div>
   <div class="mb-3"><label class="form-label small text-muted">연락처 *</label>
     <input type="tel" id="bk-phone" class="form-control form-control-lg" placeholder="010-0000-0000"></div>
-  <div class="mb-3"><label class="form-label small text-muted">출동 주소지 *</label>
-    <input type="text" id="bk-address" class="form-control form-control-lg" placeholder="상세 주소"></div>
+  <div class="mb-3">
+    <label class="form-label small text-muted">출동 지역 선택 *</label>
+    <div id="bk-region-wrap" style="border:1px solid #dee2e6;border-radius:12px;overflow:hidden;">
+      <div onclick="toggleBkRegion()" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#fff;cursor:pointer;">
+        <span id="bk-region-label" style="font-size:1rem;color:#6c757d;">지역을 선택하세요</span>
+        <span style="font-size:.8rem;color:#aaa;" id="bk-region-arrow">▼</span>
+      </div>
+      <div id="bk-region-list" style="display:none;padding:12px;background:#f8f9fa;max-height:260px;overflow-y:auto;"></div>
+    </div>
+    <input type="hidden" id="bk-region">
+  </div>
+  <div class="mb-3"><label class="form-label small text-muted">세부 주소 *</label>
+    <input type="text" id="bk-address" class="form-control form-control-lg" placeholder="아파트명, 동/호수, 건물명 등"></div>
   <div class="mb-3"><label class="form-label small text-muted">평수 선택</label>
     <select id="bk-size" class="form-select form-select-lg">
       <option value="원룸 (10평 이하)">원룸 (10평 이하)</option>
@@ -471,6 +482,9 @@ DB.ref('users/master').once('value', function(s) {
   });
 });
 
+// ── 화면 히스토리 스택
+var PAGE_STACK = [];
+
 // ── 화면 전환
 function goTo(key) {
   if (key === 'admin-panel' && !CU) { goTo('admin-gate'); return; }
@@ -479,6 +493,15 @@ function goTo(key) {
     'my-booking':'s-my-booking','about':'s-about','area':'s-area',
     'admin-gate':'s-admin-gate','register':'s-register','admin-panel':'s-admin'
   };
+  // 현재 화면 스택에 저장 (메인→메인 중복 제외)
+  var curActive = document.querySelector('.screen.active, .pg.active, .dark-pg.active');
+  if (curActive && curActive.id) {
+    var curKey = Object.keys(map).find(function(k) { return map[k] === curActive.id; }) || curActive.id;
+    if (curKey !== key) {
+      PAGE_STACK.push(curKey);
+      if (PAGE_STACK.length > 20) PAGE_STACK.shift();
+    }
+  }
   document.querySelectorAll('.screen,.pg,.dark-pg').forEach(function(el) {
     el.classList.remove('active'); el.style.display = '';
   });
@@ -487,13 +510,41 @@ function goTo(key) {
   if (!el) return;
   el.classList.add('active');
   window.scrollTo(0, 0);
-  if (key === 'main') document.body.classList.add('locked');
+  if (key === 'main') { document.body.classList.add('locked'); PAGE_STACK = []; }
   else document.body.classList.remove('locked');
   if (key === 'about') loadMasterCallStatus();
   if (key === 'area') loadAreaMap();
   if (key === 'admin-panel') {
     startListeners();
     setTimeout(function() { renderStCard(CU ? CU.workerStatus || '대기중' : '대기중'); }, 200);
+  }
+}
+
+// ── 뒤로가기
+function goBack() {
+  if (PAGE_STACK.length > 0) {
+    var prev = PAGE_STACK.pop();
+    // goTo 호출 시 스택에 다시 쌓이지 않도록 직접 화면 전환
+    var map = {
+      'main':'s-main','booking':'s-booking','price':'s-price',
+      'my-booking':'s-my-booking','about':'s-about','area':'s-area',
+      'admin-gate':'s-admin-gate','register':'s-register','admin-panel':'s-admin'
+    };
+    document.querySelectorAll('.screen,.pg,.dark-pg').forEach(function(el) {
+      el.classList.remove('active'); el.style.display = '';
+    });
+    var id = map[prev] || ('s-' + prev);
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('active');
+    window.scrollTo(0, 0);
+    if (prev === 'main') { document.body.classList.add('locked'); PAGE_STACK = []; }
+    else document.body.classList.remove('locked');
+    if (prev === 'about') loadMasterCallStatus();
+    if (prev === 'area') loadAreaMap();
+  } else {
+    // 스택 없으면 메인으로
+    goTo('main');
   }
 }
 
@@ -549,10 +600,65 @@ function customConfirm(msg, onOk, onCancel) {
   document.getElementById('cc-cancel').onclick = function() { d.remove(); if(onCancel) onCancel(); };
 }
 
-function canAlarm() {
+// ── 예약폼 지역 선택 UI
+function toggleBkRegion() {
+  var list = document.getElementById('bk-region-list');
+  var arrow = document.getElementById('bk-region-arrow');
+  if (!list) return;
+  if (list.style.display === 'none') {
+    // 렌더
+    var html = '';
+    Object.keys(REGIONS).forEach(function(region) {
+      html += '<div style="margin-bottom:10px;">'
+        + '<div style="font-size:.75rem;font-weight:700;color:#555;margin-bottom:5px;">' + region + '</div>'
+        + '<div style="display:flex;flex-wrap:wrap;gap:5px;">';
+      REGIONS[region].forEach(function(a) {
+        html += '<button data-area="' + a + '" onclick="selRegBtn(this)" style="padding:6px 12px;border:1px solid #dee2e6;border-radius:20px;background:#fff;font-size:.78rem;cursor:pointer;">' + a + '</button>';
+      });
+      html += '</div></div>';
+    });
+    list.innerHTML = html;
+    list.style.display = 'block';
+    if (arrow) arrow.textContent = '▲';
+  } else {
+    list.style.display = 'none';
+    if (arrow) arrow.textContent = '▼';
+  }
+}
+function selectBkRegionBtn(btn) {
+  selectBkRegion(btn.getAttribute('data-area'));
+}
+function selRegBtn(b){selectBkRegion(b.getAttribute("data-area"));}
+function selectBkRegion(area) {
+  document.getElementById('bk-region').value = area;
+  var label = document.getElementById('bk-region-label');
+  if (label) { label.textContent = '📍 ' + area; label.style.color = '#212529'; }
+  var list = document.getElementById('bk-region-list');
+  if (list) list.style.display = 'none';
+  var arrow = document.getElementById('bk-region-arrow');
+  if (arrow) arrow.textContent = '▼';
+  // 선택된 지역 버튼 강조
+  var btns = list ? list.querySelectorAll('button') : [];
+  btns.forEach(function(b) {
+    b.style.background = b.textContent === area ? '#212529' : '#fff';
+    b.style.color = b.textContent === area ? '#fff' : '#212529';
+    b.style.borderColor = b.textContent === area ? '#212529' : '#dee2e6';
+  });
+}
+
+function canAlarm(bkRegion) {
   if (!CU) return false;
   var st = CU.workerStatus || '대기중';
-  return st === '대기중'; // 연락중/이동중/작업중/퇴근은 알람 안 울림
+  if (st !== '대기중') return false; // 대기중만 알람
+  if (CU.role === 'master') return true; // 마스터는 모든 알람
+  // 작업자: 담당 지역 확인
+  if (!bkRegion) return true; // 지역 정보 없으면 허용
+  var myAreas = CU.coverAreas || (CU.area ? CU.area.split(',').map(function(a){return a.trim();}).filter(Boolean) : []);
+  if (!myAreas.length) return true; // 지역 미설정이면 허용
+  // 예약 지역이 내 담당 지역에 포함되는지 확인
+  return myAreas.some(function(a) {
+    return bkRegion.indexOf(a) >= 0 || a.indexOf(bkRegion) >= 0;
+  });
 }
 
 // ── 알람 배너
@@ -568,29 +674,29 @@ function showBanner(title, body) {
     + '<button onclick="dismissBanner()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:.8rem;cursor:pointer;margin-left:10px;flex-shrink:0;">확인</button>'
     + '</div>';
   document.body.appendChild(d);
-  playSound();
-  if (AL_TMR) clearInterval(AL_TMR);
-  AL_TMR = setInterval(function() { playSound(); }, 5000);
+  // 배너 표시 시 즉시 소리 (startCallAlarm에서 이미 호출할 수 있으므로 중복 방지)
 }
 function dismissBanner() {
   var el = document.getElementById('alarm-banner');
   if (el) el.remove();
-  if (AL_TMR) { clearInterval(AL_TMR); AL_TMR = null; }
 }
 
 // ── 예약 신청
 function submitBooking() {
-  var name = document.getElementById('bk-name').value.trim();
-  var phone = document.getElementById('bk-phone').value.trim();
-  var addr = document.getElementById('bk-address').value.trim();
-  var size = document.getElementById('bk-size').value;
-  var fac = document.getElementById('bk-fac').checked;
-  var memo = document.getElementById('bk-memo').value.trim();
-  if (!name) return toast('이름을 입력하세요.');
-  if (!phone) return toast('연락처를 입력하세요.');
-  if (!addr) return toast('주소를 입력하세요.');
+  var name   = document.getElementById('bk-name').value.trim();
+  var phone  = document.getElementById('bk-phone').value.trim();
+  var region = document.getElementById('bk-region').value.trim();
+  var detail = document.getElementById('bk-address').value.trim();
+  var addr   = region ? (region + ' ' + detail) : detail;
+  var size   = document.getElementById('bk-size').value;
+  var fac    = document.getElementById('bk-fac').checked;
+  var memo   = document.getElementById('bk-memo').value.trim();
+  if (!name)   return toast('이름을 입력하세요.');
+  if (!phone)  return toast('연락처를 입력하세요.');
+  if (!region) return toast('출동 지역을 선택하세요.');
+  if (!detail) return toast('세부 주소를 입력하세요.');
   DB.ref('bookings').push({
-    name:name, phone:phone, address:addr, size:size,
+    name:name, phone:phone, address:addr, region:region, size:size,
     facilityRequest:fac, memo:memo, status:'접수중',
     createdAt:Date.now(), dateStr:new Date().toLocaleString('ko-KR')
   }, function(err) {
@@ -598,6 +704,16 @@ function submitBooking() {
     DB.ref('alerts').push({ type:'new_booking', name:name, phone:phone, address:addr, size:size, createdAt:Date.now() });
     toast('✅ 예약이 접수되었습니다!');
     ['bk-name','bk-phone','bk-address','bk-memo'].forEach(function(id) { document.getElementById(id).value = ''; });
+    var ri=document.getElementById('bk-region');if(ri)ri.value='';
+    var rl=document.getElementById('bk-region-label');if(rl){rl.textContent='지역을 선택하세요';rl.style.color='#6c757d';}
+    var bl=document.getElementById('bk-region-list');if(bl)bl.style.display='none';
+    var ri=document.getElementById('bk-region'); if(ri) ri.value='';
+    var rl=document.getElementById('bk-region-label'); if(rl){rl.textContent='지역을 선택하세요';rl.style.color='#6c757d';}
+    var bl=document.getElementById('bk-region-list'); if(bl) bl.style.display='none';
+    document.getElementById('bk-region').value = '';
+    document.getElementById('bk-region-label').textContent = '지역을 선택하세요';
+    document.getElementById('bk-region-label').style.color = '#6c757d';
+    var bl = document.getElementById('bk-region-list'); if(bl) bl.style.display='none';
     document.getElementById('bk-fac').checked = false;
     goTo('my-booking');
     document.getElementById('srch-phone').value = phone;
@@ -897,11 +1013,11 @@ function startListeners() {
         if (d.status === '접수중') np[c.key] = d;
       });
       ALL_BK.sort(function(a,b) { return b.createdAt - a.createdAt; });
-      if (LAST_CNT >= 0 && ALL_BK.length > LAST_CNT && canAlarm()) {
+      if (LAST_CNT >= 0 && ALL_BK.length > LAST_CNT && canAlarm(ALL_BK[0].region||ALL_BK[0].address||'')) {
         showBanner('📋 새 예약 접수!', ALL_BK[0].name + ' · ' + ALL_BK[0].size + ' · ' + ALL_BK[0].address);
       }
       LAST_CNT = ALL_BK.length;
-      Object.keys(np).forEach(function(k) { if (!PEND[k] && canAlarm()) startCallAlarm(np[k]); });
+      Object.keys(np).forEach(function(k) { if (!PEND[k] && canAlarm(np[k].region||np[k].address||'')) startCallAlarm(np[k]); });
       Object.keys(PEND).forEach(function(k) { if (!np[k]) stopCallAlarm(); });
       PEND = np;
       renderBkList(); renderDash(); renderMyRec(); renderCallList();
@@ -943,7 +1059,7 @@ function startListeners() {
         if (!keys[c.key]) {
           keys[c.key] = true;
           var d = c.val();
-          if (canAlarm()) showBanner('📋 새 예약!', (d.name || '') + ' · ' + (d.address || ''));
+          if (canAlarm(d.region||d.address||'')) showBanner('📋 새 예약!', (d.name || '') + ' · ' + (d.address || ''));
         }
       });
     };
@@ -954,14 +1070,17 @@ function startListeners() {
 
 // ── 콜 알람
 function startCallAlarm(bk) {
-  if (!canAlarm()) return;
+  if (!canAlarm(bk.region||bk.address||'')) return;
   stopCallAlarm();
+  // 즉시 첫 알람
+  playSound();
   showBanner('🚨 새 콜 접수!', bk.name + ' · ' + bk.size + ' · ' + bk.address);
+  // 30초마다 계속 반복
   CALL_TMR = setInterval(function() {
-    if (!canAlarm() || !PEND[bk.id]) { stopCallAlarm(); return; }
+    if (!canAlarm(bk.region||bk.address||'') || !PEND[bk.id]) { stopCallAlarm(); return; }
     playSound();
-    toast('🚨 미수락 콜! — ' + bk.name);
-  }, 10000);
+    showBanner('🚨 미수락 콜!', bk.name + ' · ' + bk.address);
+  }, 5000);
 }
 function stopCallAlarm() {
   if (CALL_TMR) { clearInterval(CALL_TMR); CALL_TMR = null; }
