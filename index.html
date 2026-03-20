@@ -1104,6 +1104,8 @@ function renderCallList() {
   }
   var html = '';
   pend.forEach(function(b) {
+    // 마스터는 연락처 표시, 작업자는 수락 전 연락처 숨김
+    var isMaster = CU && CU.role === 'master';
     html += '<div class="call-card">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
       + '<div style="font-weight:900;font-size:.95rem;color:#e74c3c;">🚨 새 콜 접수!</div>'
@@ -1111,7 +1113,9 @@ function renderCallList() {
       + '<div style="background:#f8f9fa;border-radius:12px;padding:12px;margin-bottom:10px;">'
       + '<div style="display:grid;grid-template-columns:auto 1fr;gap:5px 10px;font-size:.84rem;line-height:1.7;">'
       + '<span style="color:#999;">👤</span><span style="font-weight:700;">' + b.name + '</span>'
-      + '<span style="color:#999;">📞</span><span><a href="tel:' + b.phone + '" style="color:#1971c2;font-weight:700;">' + b.phone + ' ☎</a></span>'
+      + (isMaster
+          ? '<span style="color:#999;">📞</span><span><a href="tel:' + b.phone + '" style="color:#1971c2;font-weight:700;">' + b.phone + ' ☎</a></span>'
+          : '<span style="color:#999;">📞</span><span style="color:#aaa;font-size:.8rem;">콜 수락 후 공개됩니다</span>')
       + '<span style="color:#999;">📍</span><span style="font-weight:700;">' + b.address + '</span>'
       + '<span style="color:#999;">📐</span><span>' + b.size + '</span>'
       + (b.facilityRequest ? '<span style="color:#999;">🔧</span><span style="color:#007bff;font-weight:700;">시설보완 요청</span>' : '')
