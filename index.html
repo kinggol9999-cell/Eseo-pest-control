@@ -320,12 +320,26 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
 </div>
 
 <!-- 실시간 서비스 가능 지역 -->
-<div id="s-area" class="screen pg">
+<div id="s-area" class="screen pg" style="padding:16px 16px 80px;">
   <div class="pg-ttl">📍 실시간 서비스 가능 지역</div>
-  <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:12px;padding:12px;margin-bottom:16px;font-size:.83rem;color:#2e7d32;">
+  <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:.83rem;color:#2e7d32;">
     🟢 현재 <b id="area-avail-cnt">-</b>명 대기중 · 즉시 출동 가능
   </div>
-  <div id="area-list"><div class="load">⏳ 불러오는 중...</div></div>
+  <!-- 좌우 분할 -->
+  <div style="display:flex;gap:10px;align-items:flex-start;">
+    <!-- 왼쪽: 대분류 클릭 목록 -->
+    <div style="width:42%;flex-shrink:0;">
+      <div id="area-region-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+    <!-- 오른쪽: 지도형 뷰 -->
+    <div style="flex:1;background:#f0f7f0;border-radius:14px;padding:12px;min-height:400px;position:relative;">
+      <div id="area-map-view">
+        <div style="text-align:center;padding:40px 10px;color:#aaa;font-size:.82rem;">
+          ← 지역을 선택하세요
+        </div>
+      </div>
+    </div>
+  </div>
   <button class="btn btn-light w-100" style="border-radius:12px;padding:14px;font-weight:700;margin-top:16px;" onclick="goTo('main')">뒤로가기</button>
 </div>
 
@@ -889,38 +903,82 @@ function getAreaSummary(w) {
 }
 
 // ── 서비스 가능 지역 지도
+// 현재 선택된 지역
+var AREA_COVERED = {};
+var AREA_SELECTED_REGION = null;
+
 function loadAreaMap() {
-  var el = document.getElementById('area-list');
   var cntEl = document.getElementById('area-avail-cnt');
-  if (!el) return;
   DB.ref('users').once('value', function(snap) {
-    var covered = {}, cnt = 0;
+    AREA_COVERED = {};
+    var cnt = 0;
     if (snap.exists()) snap.forEach(function(c) {
       var d = c.val();
       if ((d.role === 'worker' || d.role === 'admin') && d.status === 'approved' && d.workerStatus === '대기중') {
         cnt++;
         var areas = d.coverAreas || (d.area ? d.area.split(',').map(function(a) { return a.trim(); }).filter(Boolean) : []);
-        areas.forEach(function(a) { covered[a] = true; });
+        areas.forEach(function(a) { AREA_COVERED[a] = true; });
       }
     });
     if (cntEl) cntEl.textContent = cnt;
-    var html = '';
-    Object.keys(REGIONS).forEach(function(region) {
-      var list = REGIONS[region];
-      var avail = list.filter(function(a) { return covered[a]; });
-      html += '<div style="background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.05);">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
-        + '<div style="font-weight:700;">' + region + '</div>'
-        + '<span style="background:' + (avail.length ? '#27ae60' : '#eee') + ';color:' + (avail.length ? '#fff' : '#999') + ';padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;">' + (avail.length ? avail.length + '개 가능' : '대기없음') + '</span>'
-        + '</div><div style="display:flex;flex-wrap:wrap;gap:6px;">';
-      list.forEach(function(a) {
-        var ok = covered[a];
-        html += '<span style="padding:5px 10px;border-radius:20px;font-size:.75rem;font-weight:' + (ok ? '700' : '400') + ';background:' + (ok ? '#e8f5e9' : '#f5f5f5') + ';color:' + (ok ? '#2e7d32' : '#bbb') + ';border:1px solid ' + (ok ? '#a5d6a7' : '#eee') + '">' + (ok ? '🟢 ' : '') + a + '</span>';
-      });
-      html += '</div></div>';
-    });
-    el.innerHTML = html;
+    renderAreaRegionList();
   });
+}
+
+function renderAreaRegionList() {
+  var el = document.getElementById('area-region-list'); if (!el) return;
+  var html = '';
+  Object.keys(REGIONS).forEach(function(region) {
+    var list = REGIONS[region];
+    var avail = list.filter(function(a) { return AREA_COVERED[a]; });
+    var hasAvail = avail.length > 0;
+    var isSelected = AREA_SELECTED_REGION === region;
+    html += '<button data-region="' + region + '" onclick="selectAreaRegion(this)"'
+      + ' style="width:100%;text-align:left;padding:9px 11px;border:1px solid ' + (isSelected ? '#27ae60' : (hasAvail ? '#a5d6a7' : '#eee')) + ';'
+      + 'border-radius:10px;background:' + (isSelected ? '#27ae60' : (hasAvail ? '#e8f5e9' : '#f9f9f9')) + ';'
+      + 'color:' + (isSelected ? '#fff' : (hasAvail ? '#1b5e20' : '#999')) + ';'
+      + 'cursor:pointer;font-size:.78rem;font-weight:' + (hasAvail ? '700' : '400') + ';">'
+      + (hasAvail ? '🟢 ' : '⚪ ') + region
+      + (hasAvail ? '<span style="float:right;font-size:.68rem;opacity:.8;">' + avail.length + '개</span>' : '')
+      + '</button>';
+  });
+  el.innerHTML = html;
+}
+
+function selectAreaRegion(btn) {
+  var region = btn.getAttribute('data-region');
+  AREA_SELECTED_REGION = region;
+  renderAreaRegionList(); // 선택 강조 업데이트
+  renderAreaMapView(region);
+}
+
+function renderAreaMapView(region) {
+  var el = document.getElementById('area-map-view'); if (!el) return;
+  var list = REGIONS[region] || [];
+  var avail = list.filter(function(a) { return AREA_COVERED[a]; });
+  var html = '<div style="margin-bottom:10px;">'
+    + '<div style="font-weight:700;font-size:.9rem;color:#1b5e20;margin-bottom:6px;">📍 ' + region + '</div>'
+    + '<div style="font-size:.75rem;color:' + (avail.length ? '#27ae60' : '#999') + ';margin-bottom:10px;font-weight:700;">'
+    + (avail.length ? '✅ ' + avail.length + '개 지역 출동 가능' : '현재 대기 작업자 없음') + '</div>'
+    + '</div>'
+    + '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+  list.forEach(function(a) {
+    var ok = AREA_COVERED[a];
+    html += '<div style="'
+      + 'padding:8px 6px;border-radius:10px;text-align:center;'
+      + 'background:' + (ok ? '#27ae60' : '#e8e8e8') + ';'
+      + 'color:' + (ok ? '#fff' : '#aaa') + ';'
+      + 'font-size:.72rem;font-weight:' + (ok ? '700' : '400') + ';'
+      + 'min-width:44px;flex:1;max-width:60px;'
+      + 'box-shadow:' + (ok ? '0 2px 6px rgba(39,174,96,.3)' : 'none') + ';">'
+      + (ok ? '🟢' : '○') + '<br>' + (a.length > 2 && (a.slice(-1)==='시'||a.slice(-1)==='구'||a.slice(-1)==='군') ? a.slice(0,-1) : a)
+      + '</div>';
+  });
+  html += '</div>';
+  if (!avail.length) {
+    html += '<div style="text-align:center;padding:20px;color:#bbb;font-size:.8rem;margin-top:10px;">현재 해당 지역 출동 가능한 작업자가 없습니다</div>';
+  }
+  el.innerHTML = html;
 }
 
 // ── 로그인
