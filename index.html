@@ -304,7 +304,26 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
     </div>
     <div id="pub-wk-list" style="display:none;padding:12px;"></div>
   </div>
-  <!-- 플랫폼 대표 연락처 -->
+  <!-- 사업자등록증 -->
+  <div style="border:1px solid #eee;border-radius:14px;overflow:hidden;margin-bottom:16px;">
+    <div onclick="toggleEl('biz-wrap')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#f8f9fa;cursor:pointer;">
+      <div style="font-weight:700;font-size:.95rem;">🏢 등록 업체 사업자 확인</div>
+      <span style="font-size:.8rem;color:#aaa;" id="biz-arrow">펼치기 ▼</span>
+    </div>
+    <div id="biz-wrap" style="display:none;padding:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f8f9fa;border-radius:12px;margin-bottom:10px;">
+        <div>
+          <div style="font-weight:700;font-size:.9rem;">이서아빠해충방역</div>
+          <div style="font-size:.75rem;color:#888;margin-top:2px;">등록 업체</div>
+        </div>
+        <button onclick="toggleEl('biz-img-wrap')" style="background:#212529;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:.8rem;font-weight:700;cursor:pointer;">사업자등록증 보기</button>
+      </div>
+      <div id="biz-img-wrap" style="display:none;text-align:center;">
+        <img src="사업자.png" alt="사업자등록증" style="width:100%;max-width:500px;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.1);" onerror="this.parentElement.innerHTML='<div style=&quot;padding:20px;color:#aaa;font-size:.85rem;&quot;>이미지를 불러올 수 없습니다.<br>사업자.png 파일을 같은 경로에 넣어주세요.</div>'">
+      </div>
+    </div>
+  </div>
+    <!-- 플랫폼 대표 연락처 -->
   <div style="border:1px solid #eee;border-radius:14px;overflow:hidden;margin-bottom:16px;">
     <div onclick="toggleEl('master-contact-wrap')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#f8f9fa;cursor:pointer;">
       <div style="font-weight:700;font-size:.95rem;">📞 플랫폼 대표 연락처</div>
@@ -886,6 +905,15 @@ function toggleEl(id) {
     var arrow2 = document.getElementById('master-contact-arrow');
     if (arrow2) arrow2.textContent = isHidden ? '접기 ▲' : '펼치기 ▼';
     if (isHidden) loadMasterCallStatus();
+  }
+  if (id === 'biz-wrap') {
+    var arrow3 = document.getElementById('biz-arrow');
+    if (arrow3) arrow3.textContent = isHidden ? '접기 ▲' : '펼치기 ▼';
+    // 닫히면 이미지도 닫기
+    if (!isHidden) {
+      var imgWrap = document.getElementById('biz-img-wrap');
+      if (imgWrap) imgWrap.style.display = 'none';
+    }
   }
 }
 
