@@ -529,6 +529,7 @@ var CU=null, ALL_BK=[], BK_FILTER='', BK_PAGE=0, BK_PER=10;
 var UBK=null, UWK=null, UAL=null;
 var CALL_TMR=null, AL_TMR=null, AUDIO=null;
 var PEND={}, LAST_CNT=-1, WK_CACHE=null;
+var ALARM_MUTED=false;
 
 // ── 지역 데이터
 var SEOUL = ['강남구','강동구','강북구','강서구','관악구','광진구','구로구','금천구','노원구',
@@ -904,7 +905,14 @@ function toggleEl(id) {
   if (id === 'master-contact-wrap') {
     var arrow2 = document.getElementById('master-contact-arrow');
     if (arrow2) arrow2.textContent = isHidden ? '접기 ▲' : '펼치기 ▼';
-    if (isHidden) loadMasterCallStatus();
+    if (isHidden) {
+      loadMasterCallStatus();
+      // 열릴 때 번호 숨기고 확인버튼 다시 표시
+      var cbtn = document.getElementById('contact-confirm-btn');
+      var cnum = document.getElementById('contact-number-wrap');
+      if (cbtn) cbtn.style.display = 'block';
+      if (cnum) cnum.style.display = 'none';
+    }
   }
   if (id === 'biz-wrap') {
     var arrow3 = document.getElementById('biz-arrow');
@@ -1125,6 +1133,13 @@ function updateCallStatusUI(status) {
     }
   }
 }
+
+function showMasterContact() {
+  var btn = document.getElementById('contact-confirm-btn');
+  var num = document.getElementById('contact-number-wrap');
+  if (btn) btn.style.display = 'none';
+  if (num) num.style.display = 'block';
+}
 function loadMasterCallStatus() {
   DB.ref('users/master/callStatus').once('value', function(snap) {
     var status = snap.val() || 'available';
@@ -1207,20 +1222,24 @@ function startListeners() {
 // ── 콜 알람
 function startCallAlarm(bk) {
   if (!canAlarm(bk.region||bk.address||'')) return;
+  ALARM_MUTED = false;
   stopCallAlarm();
-  // 즉시 첫 알람
-  playSound();
+  if (!ALARM_MUTED) playSound();
   showBanner('🚨 새 콜 접수!', bk.name + ' · ' + bk.size + ' · ' + bk.address);
-  // 30초마다 계속 반복
   CALL_TMR = setInterval(function() {
-    if (!canAlarm(bk.region||bk.address||'') || !PEND[bk.id]) { stopCallAlarm(); return; }
-    playSound();
+    if (!PEND[bk.id]) { stopCallAlarm(); return; }
+    if (!ALARM_MUTED && canAlarm(bk.region||bk.address||'')) playSound();
     showBanner('🚨 미수락 콜!', bk.name + ' · ' + bk.address);
   }, 5000);
 }
 function stopCallAlarm() {
   if (CALL_TMR) { clearInterval(CALL_TMR); CALL_TMR = null; }
   dismissBanner();
+}
+function muteAlarm() {
+  ALARM_MUTED = true;
+  dismissBanner();
+  toast('🔕 알람 음소거 — 콜 카드는 계속 표시됩니다');
 }
 function updateBadge(cnt) {
   var b = document.getElementById('call-badge');
@@ -1245,7 +1264,10 @@ function renderCallList() {
     html += '<div class="call-card">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
       + '<div style="font-weight:900;font-size:.95rem;color:#e74c3c;">🚨 새 콜 접수!</div>'
-      + '<div style="font-size:.7rem;color:#999;">' + (b.dateStr || '') + '</div></div>'
+      + '<div style="display:flex;align-items:center;gap:6px;">'
+      + '<div style="font-size:.7rem;color:#999;">' + (b.dateStr || '') + '</div>'
+      + '<button onclick="muteAlarm()" style="background:#555;color:#fff;border:none;border-radius:14px;padding:3px 9px;font-size:.68rem;cursor:pointer;font-weight:700;">🔕 알람끄기</button>'
+      + '</div></div>'
       + '<div style="background:#f8f9fa;border-radius:12px;padding:12px;margin-bottom:10px;">'
       + '<div style="display:grid;grid-template-columns:auto 1fr;gap:5px 10px;font-size:.84rem;line-height:1.7;">'
       + '<span style="color:#999;">👤</span><span style="font-weight:700;">' + b.name + '</span>'
@@ -1269,7 +1291,7 @@ function acceptCallBtn(btn) {
   var bname = btn.getAttribute('data-name');
   var bphone = btn.getAttribute('data-phone');
   if (!CU) return;
-  customConfirm(bname + ' 고객의 콜을 수락하시겠습니까?\n연락처: ' + bphone, function() {
+  customConfirm(bname + ' 고객의 콜을 수락하시겠습니까?', function() {
   DB.ref('bookings/' + bid).update({
     status:'연락중', workerName:CU.name || '', workerPhone:CU.phone || '',
     acceptedAt:Date.now(), acceptedBy:CU.id || CU.key || ''
@@ -1280,7 +1302,7 @@ function acceptCallBtn(btn) {
     CU.workerStatus = '연락중';
     renderStCard('연락중');
     stopCallAlarm();
-    toast('✅ ' + bname + ' 콜 수락! 연락중 상태로 변경됩니다.');
+    toast('✅ ' + bname + ' 수락완료! 연락처: ' + bphone);
   });
   }); // customConfirm
 }
@@ -1393,8 +1415,11 @@ function setMyStatus(st) {
       toast('상태: ' + st + ' (알람 OFF)');
       if (aw) aw.style.display = 'none';
     } else {
+      ALARM_MUTED = false;
       toast('상태: 대기중 — 알람 ON');
       showAreaSelector();
+      var pl = Object.values(PEND);
+      if (pl.length > 0) setTimeout(function(){ startCallAlarm(pl[0]); }, 300);
     }
   });
 }
