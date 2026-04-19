@@ -795,22 +795,23 @@ function submitBooking() {
     createdAt:Date.now(), dateStr:new Date().toLocaleString('ko-KR')
   }, function(err) {
     if (err) return toast('오류: ' + err.message);
-    DB.ref('alerts').push({ type:'new_booking', name:name, phone:phone, address:addr, size:size, createdAt:Date.now() });
+    // alerts에도 region 포함
+    DB.ref('alerts').push({
+      type:'new_booking', name:name, phone:phone,
+      address:addr, region:region, size:size, createdAt:Date.now()
+    });
     toast('✅ 예약이 접수되었습니다!');
-    ['bk-name','bk-phone','bk-address','bk-memo'].forEach(function(id) { document.getElementById(id).value = ''; });
-    var ri=document.getElementById('bk-region');if(ri)ri.value='';
-    var rl=document.getElementById('bk-region-label');if(rl){rl.textContent='지역을 선택하세요';rl.style.color='#6c757d';}
-    var bl=document.getElementById('bk-region-list');if(bl)bl.style.display='none';
-    var ri=document.getElementById('bk-region'); if(ri) ri.value='';
-    var rl=document.getElementById('bk-region-label'); if(rl){rl.textContent='지역을 선택하세요';rl.style.color='#6c757d';}
-    var bl=document.getElementById('bk-region-list'); if(bl) bl.style.display='none';
-    document.getElementById('bk-region').value = '';
-    document.getElementById('bk-region-label').textContent = '지역을 선택하세요';
-    document.getElementById('bk-region-label').style.color = '#6c757d';
-    var bl = document.getElementById('bk-region-list'); if(bl) bl.style.display='none';
-    document.getElementById('bk-fac').checked = false;
+    // 폼 초기화 (중복 제거)
+    ['bk-name','bk-phone','bk-address','bk-memo'].forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.value = '';
+    });
+    var ri = document.getElementById('bk-region'); if (ri) ri.value = '';
+    var rl = document.getElementById('bk-region-label');
+    if (rl) { rl.textContent = '지역을 선택하세요'; rl.style.color = '#6c757d'; }
+    var bl = document.getElementById('bk-region-list'); if (bl) bl.style.display = 'none';
+    var fa = document.getElementById('bk-fac'); if (fa) fa.checked = false;
     goTo('my-booking');
-    document.getElementById('srch-phone').value = phone;
+    var sp = document.getElementById('srch-phone'); if (sp) sp.value = phone;
     setTimeout(loadMyBk, 400);
   });
 }
