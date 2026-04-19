@@ -746,8 +746,9 @@ function canAlarm(bkRegion) {
   if (CU.role === 'master') return true; // 마스터는 모든 알람
   // 작업자: 담당 지역 확인
   if (!bkRegion) return true; // 지역 정보 없으면 허용
-  var myAreas = CU.coverAreas || (CU.area ? CU.area.split(',').map(function(a){return a.trim();}).filter(Boolean) : []);
-  if (!myAreas.length) return true; // 지역 미설정이면 허용
+  var myAreas = CU.coverAreas && CU.coverAreas.length ? CU.coverAreas :
+    (CU.area ? CU.area.split(',').map(function(a){return a.trim();}).filter(Boolean) : []);
+  if (!myAreas.length) return true; // 지역 미설정이면 모든 콜 허용
   // 예약 지역이 내 담당 지역에 포함되는지 확인
   return myAreas.some(function(a) {
     return bkRegion.indexOf(a) >= 0 || a.indexOf(bkRegion) >= 0;
@@ -1180,9 +1181,17 @@ function startListeners() {
         showBanner('📋 새 예약 접수!', ALL_BK[0].name + ' · ' + ALL_BK[0].size + ' · ' + ALL_BK[0].address);
       }
       LAST_CNT = ALL_BK.length;
-      Object.keys(np).forEach(function(k) { if (!PEND[k] && canAlarm(np[k].region||np[k].address||'')) startCallAlarm(np[k]); });
+      // 새 콜 알람 (기존에 없던 콜)
+      Object.keys(np).forEach(function(k) {
+        if (!PEND[k] && canAlarm(np[k].region||np[k].address||'')) startCallAlarm(np[k]);
+      });
+      // 사라진 콜 알람 중지
       Object.keys(PEND).forEach(function(k) { if (!np[k]) stopCallAlarm(); });
       PEND = np;
+      // 첫 로드 시 이미 대기중인 콜 있으면 즉시 알람
+      if (LAST_CNT < 0 && Object.keys(PEND).length > 0 && canAlarm(Object.values(PEND)[0].region||Object.values(PEND)[0].address||'')) {
+        setTimeout(function() { startCallAlarm(Object.values(PEND)[0]); }, 500);
+      }
       renderBkList(); renderDash(); renderMyRec(); renderCallList();
       updateBadge(Object.keys(PEND).length);
     };
@@ -1380,8 +1389,14 @@ function recStBtn(btn) {
         if (CU) {
           DB.ref('users/' + CU.key).update({workerStatus:'대기중'});
           CU.workerStatus = '대기중';
+          ALARM_MUTED = false;
           renderStCard('대기중');
           showAreaSelector();
+          // 완료 후 대기중 전환 시 기존 콜 있으면 알람 재시작
+          setTimeout(function() {
+            var pl = Object.values(PEND);
+            if (pl.length > 0) startCallAlarm(pl[0]);
+          }, 500);
         }
         toast('✅ 완료 처리됐습니다. 대기중으로 전환됩니다.');
       });
@@ -1397,8 +1412,14 @@ function recStBtn(btn) {
         if (CU) {
           DB.ref('users/' + CU.key).update({workerStatus:'대기중'});
           CU.workerStatus = '대기중';
+          ALARM_MUTED = false;
           renderStCard('대기중');
           showAreaSelector();
+          // 취소 후 다른 콜 있으면 알람
+          setTimeout(function() {
+            var pl = Object.values(PEND);
+            if (pl.length > 0) startCallAlarm(pl[0]);
+          }, 1000);
         }
         toast('취소됐습니다. 콜이 다시 접수중으로 돌아갑니다.');
       });
