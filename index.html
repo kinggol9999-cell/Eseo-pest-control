@@ -730,6 +730,15 @@ function selectBkRegion(area) {
   });
 }
 
+// 앱 포그라운드 복귀 시 콜 확인 후 알람 재시작
+
+function resumeAlarmCheck() {
+  if (!CU || CU.role === 'master') return;
+  if ((CU.workerStatus||'대기중') !== '대기중') return;
+  if (ALARM_MUTED) return;
+  var pl = Object.values(PEND);
+  if (pl.length > 0 && !CALL_TMR) startCallAlarm(pl[0]);
+}
 function canAlarm(bkRegion) {
   if (!CU) return false;
   var st = CU.workerStatus || '대기중';
@@ -1033,6 +1042,8 @@ function doLogin() {
     if (found.status === 'pending') return toast('승인 대기 중입니다.');
     if (found.status === 'rejected') return toast('사용이 제한된 계정입니다.');
     CU = found;
+    // 자동 로그인을 위해 localStorage에 저장
+    try { localStorage.setItem('saved_id', found.id); localStorage.setItem('saved_pw', found.password); } catch(e){}
     document.querySelectorAll('.master-tab').forEach(function(el) {
       el.style.display = found.role === 'master' ? 'block' : 'none';
     });
@@ -1050,6 +1061,7 @@ function doLogin() {
 
 // ── 로그아웃
 function doLogout() {
+  try { localStorage.removeItem('saved_id'); localStorage.removeItem('saved_pw'); } catch(e){}
   CU = null; ALL_BK = []; LAST_CNT = -1; PEND = {};
   if (UBK) { UBK(); UBK = null; }
   if (UWK) { UWK(); UWK = null; }
@@ -1224,6 +1236,8 @@ function startCallAlarm(bk) {
   if (!canAlarm(bk.region||bk.address||'')) return;
   ALARM_MUTED = false;
   stopCallAlarm();
+  // 안드로이드 백그라운드 알람 서비스 시작
+  if (window.AndroidBridge) AndroidBridge.startAlarm();
   if (!ALARM_MUTED) playSound();
   showBanner('🚨 새 콜 접수!', bk.name + ' · ' + bk.size + ' · ' + bk.address);
   CALL_TMR = setInterval(function() {
@@ -1235,10 +1249,13 @@ function startCallAlarm(bk) {
 function stopCallAlarm() {
   if (CALL_TMR) { clearInterval(CALL_TMR); CALL_TMR = null; }
   dismissBanner();
+  // 안드로이드 알람 서비스 중지
+  if (window.AndroidBridge) AndroidBridge.stopAlarm();
 }
 function muteAlarm() {
   ALARM_MUTED = true;
   dismissBanner();
+  if (window.AndroidBridge) AndroidBridge.stopAlarm();
   toast('🔕 알람 음소거 — 콜 카드는 계속 표시됩니다');
 }
 function updateBadge(cnt) {
@@ -1816,7 +1833,38 @@ function demBtn(b) { DB.ref('users/' + b.getAttribute('data-key')).update({role:
 document.addEventListener('touchstart', function f() { unlockAudio(); document.removeEventListener('touchstart', f); }, {once:true});
 document.addEventListener('click', function f() { unlockAudio(); document.removeEventListener('click', f); }, {once:true});
 if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
-goTo('main');
+
+// ── 자동 로그인
+function tryAutoLogin() {
+  try {
+    var sid = localStorage.getItem('saved_id');
+    var spw = localStorage.getItem('saved_pw');
+    if (!sid || !spw) { goTo('main'); return; }
+    DB.ref('users').once('value', function(snap) {
+      if (!snap.exists()) { goTo('main'); return; }
+      var found = null;
+      snap.forEach(function(ch) {
+        var d = ch.val();
+        if (d.id === sid && d.password === spw) found = Object.assign({key:ch.key}, d);
+      });
+      if (!found || found.status !== 'approved') { goTo('main'); return; }
+      CU = found;
+      document.querySelectorAll('.master-tab').forEach(function(el) {
+        el.style.display = found.role === 'master' ? 'block' : 'none';
+      });
+      goTo('admin-panel');
+      startListeners();
+      setTimeout(function() {
+        renderStCard(found.workerStatus || '대기중');
+        showTab('t-call');
+        if (found.role === 'master') loadMasterCallStatus();
+        if (found.role !== 'master' && (found.workerStatus || '대기중') === '대기중') showAreaSelector();
+      }, 400);
+    });
+  } catch(e) { goTo('main'); }
+}
+
+tryAutoLogin();
 </script>
 </body>
 </html>
