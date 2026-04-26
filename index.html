@@ -17,6 +17,22 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
 @keyframes slideDown{from{transform:translateY(-100%);opacity:0;}to{transform:translateY(0);opacity:1;}}
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:.4;}}
 @keyframes pulse{0%,100%{box-shadow:0 2px 12px rgba(231,76,60,.15);}50%{box-shadow:0 2px 20px rgba(231,76,60,.45);}}
+/* 공지사항 팝업 */
+.notice-wrap{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px;}
+.notice-box{background:#fff;border-radius:20px;width:100%;max-width:360px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.3);}
+.notice-header{background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;}
+.notice-header h3{font-size:1rem;font-weight:900;margin:0;}
+.notice-body{padding:18px;font-size:.88rem;color:#333;line-height:1.8;max-height:60vh;overflow-y:auto;white-space:pre-wrap;}
+.notice-footer{padding:14px 18px;border-top:1px solid #eee;}
+.notice-close-btn{width:100%;padding:12px;border:none;border-radius:10px;background:#e74c3c;color:#fff;font-weight:700;font-size:.9rem;cursor:pointer;}
+/* 공지사항 팝업 */
+.notice-wrap{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px;}
+.notice-box{background:#fff;border-radius:20px;width:100%;max-width:360px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.3);}
+.notice-header{background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;}
+.notice-header h3{font-size:1rem;font-weight:900;margin:0;}
+.notice-body{padding:18px;font-size:.88rem;color:#333;line-height:1.8;max-height:60vh;overflow-y:auto;}
+.notice-footer{padding:14px 18px;border-top:1px solid #eee;display:flex;gap:8px;}
+.notice-close-btn{flex:1;padding:12px;border:none;border-radius:10px;background:#e74c3c;color:#fff;font-weight:700;font-size:.9rem;cursor:pointer;}
 
 /* 메인 */
 #s-main{position:relative;min-height:100vh;display:none;flex-direction:column;justify-content:flex-end;padding-bottom:50px;background:url('배경화면.png') center/cover no-repeat;}
@@ -112,6 +128,35 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
 </head>
 <body>
 <div class="toast-bar" id="toast"></div>
+
+<!-- 공지사항 팝업 -->
+<div id="notice-popup" class="notice-wrap" style="display:none;">
+  <div class="notice-box">
+    <div class="notice-header">
+      <h3>📢 공지사항</h3>
+      <button onclick="closeNotice()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;padding:5px 10px;font-size:.8rem;cursor:pointer;">닫기</button>
+    </div>
+    <div class="notice-body" id="notice-body">
+      ⏳ 불러오는 중...
+    </div>
+    <div class="notice-footer">
+      <button class="notice-close-btn" onclick="closeNotice()">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 공지사항 팝업 -->
+<div id="notice-popup" class="notice-wrap" style="display:none;">
+  <div class="notice-box">
+    <div class="notice-header">
+      <h3>📢 공지사항</h3>
+    </div>
+    <div class="notice-body" id="notice-body">⏳ 불러오는 중...</div>
+    <div class="notice-footer">
+      <button class="notice-close-btn" onclick="closeNotice()">확인</button>
+    </div>
+  </div>
+</div>
 
 <!-- 메인 -->
 <div id="s-main" class="screen">
@@ -444,6 +489,15 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
         </div>
         <div id="master-call-status-label" style="font-size:.72rem;opacity:.7;margin-top:6px;">오전 10시 ~ 오후 10시 통화 가능</div>
       </div>
+      <!-- 공지사항 관리 -->
+      <div style="margin-top:12px;border-top:1px solid rgba(255,255,255,.15);padding-top:12px;">
+        <div style="font-size:.72rem;opacity:.6;margin-bottom:6px;">📢 공지사항 관리</div>
+        <textarea id="notice-input" rows="3" style="width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:10px;padding:10px;font-size:.8rem;resize:none;outline:none;" placeholder="공지사항 내용 입력..."></textarea>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <button onclick="saveNotice()" style="flex:1;padding:8px;border:none;border-radius:10px;background:#27ae60;color:#fff;font-size:.78rem;font-weight:700;cursor:pointer;">💾 저장 (표시)</button>
+          <button onclick="disableNotice()" style="flex:1;padding:8px;border:none;border-radius:10px;background:rgba(255,255,255,.15);color:#fff;font-size:.78rem;font-weight:700;cursor:pointer;">🚫 공지 끄기</button>
+        </div>
+      </div>
     </div>
 
     <div style="padding:10px 14px 4px;font-size:.78rem;color:#999;font-weight:700;">
@@ -558,6 +612,28 @@ var REGIONS = {
 };
 
 // ── 마스터 초기화
+// 공지사항 초기값 세팅
+DB.ref('notice').once('value', function(snap) {
+  if (!snap.exists()) {
+    DB.ref('notice').set({
+      text: '임시운영 안내\n\n현재 서울·경기·인천 지역만 서비스 가능합니다.\n\n예약 정보 입력 후 아래 번호로 문의해 주세요.\n📞 010-2589-5746\n\n입력하지 않고 전화하셔도 됩니다.',
+      enabled: true,
+      updatedAt: Date.now()
+    });
+  }
+});
+
+// 공지사항 기본값
+DB.ref('notice').once('value', function(snap) {
+  if (!snap.exists()) {
+    DB.ref('notice').set({
+      text: '임시운영 안내\n\n현재 서울·경기·인천 지역만 서비스 가능합니다.\n\n예약 정보 입력 후 아래 번호로 문의해 주세요.\n📞 010-2589-5746\n\n입력하지 않고 전화하셔도 됩니다.',
+      enabled: true,
+      updatedAt: Date.now()
+    });
+  }
+});
+
 DB.ref('users/master').once('value', function(s) {
   if (!s.exists()) DB.ref('users/master').set({
     id:'master', name:'마스터관리자', password:'master1234',
@@ -565,6 +641,45 @@ DB.ref('users/master').once('value', function(s) {
     workerStatus:'대기중', createdAt:Date.now()
   });
 });
+
+// ── 공지사항
+function loadNotice() {
+  DB.ref('notice').once('value', function(snap) {
+    if (!snap.exists()) return;
+    var d = snap.val();
+    if (!d.enabled || !d.text) return;
+    var el = document.getElementById('notice-body');
+    if (el) el.textContent = d.text;
+    var popup = document.getElementById('notice-popup');
+    if (popup) popup.style.display = 'flex';
+    // 마스터 공지 입력란에도 현재 내용 표시
+    var input = document.getElementById('notice-input');
+    if (input) input.value = d.text;
+  });
+}
+function closeNotice() {
+  var popup = document.getElementById('notice-popup');
+  if (popup) popup.style.display = 'none';
+}
+function saveNotice() {
+  var text = document.getElementById('notice-input').value.trim();
+  if (!text) return toast('공지 내용을 입력하세요.');
+  DB.ref('notice').set({text:text, enabled:true, updatedAt:Date.now()}, function(err) {
+    if (!err) toast('✅ 공지사항 저장 완료');
+    else toast('오류: ' + err.message);
+  });
+}
+function disableNotice() {
+  DB.ref('notice').update({enabled:false}, function(err) {
+    if (!err) {
+      toast('공지사항 비활성화 완료');
+      var input = document.getElementById('notice-input');
+      if (input) input.value = '';
+    }
+  });
+}
+
+// ── 공지사항
 
 // ── 화면 히스토리 스택
 var PAGE_STACK = [];
@@ -1891,6 +2006,8 @@ function tryAutoLogin() {
 }
 
 tryAutoLogin();
+loadNotice();
+loadNotice();
 </script>
 </body>
 </html>
