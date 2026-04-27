@@ -17,20 +17,24 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
 @keyframes slideDown{from{transform:translateY(-100%);opacity:0;}to{transform:translateY(0);opacity:1;}}
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:.4;}}
 @keyframes pulse{0%,100%{box-shadow:0 2px 12px rgba(231,76,60,.15);}50%{box-shadow:0 2px 20px rgba(231,76,60,.45);}}
+
+/* ── 한글 입력 IME 픽스: 모든 입력 필드 공통 */
+input, textarea, select {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+.form-control, .form-select {
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: manipulation;
+}
+
 /* 공지사항 팝업 */
 .notice-wrap{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px;}
 .notice-box{background:#fff;border-radius:20px;width:100%;max-width:360px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.3);}
 .notice-header{background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;}
 .notice-header h3{font-size:1rem;font-weight:900;margin:0;}
 .notice-body{padding:18px;font-size:.88rem;color:#333;line-height:1.8;max-height:60vh;overflow-y:auto;white-space:pre-wrap;}
-.notice-footer{padding:14px 18px;border-top:1px solid #eee;}
-.notice-close-btn{width:100%;padding:12px;border:none;border-radius:10px;background:#e74c3c;color:#fff;font-weight:700;font-size:.9rem;cursor:pointer;}
-/* 공지사항 팝업 */
-.notice-wrap{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px;}
-.notice-box{background:#fff;border-radius:20px;width:100%;max-width:360px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.3);}
-.notice-header{background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;}
-.notice-header h3{font-size:1rem;font-weight:900;margin:0;}
-.notice-body{padding:18px;font-size:.88rem;color:#333;line-height:1.8;max-height:60vh;overflow-y:auto;}
 .notice-footer{padding:14px 18px;border-top:1px solid #eee;display:flex;gap:8px;}
 .notice-close-btn{flex:1;padding:12px;border:none;border-radius:10px;background:#e74c3c;color:#fff;font-weight:700;font-size:.9rem;cursor:pointer;}
 
@@ -60,7 +64,11 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
 
 /* 로그인 */
 .lbox{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:26px 22px;width:100%;}
-.lbox input{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:12px;padding:13px;margin-bottom:13px;width:100%;font-size:1rem;outline:none;}
+.lbox input{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:12px;padding:13px;margin-bottom:13px;width:100%;font-size:1rem;outline:none;
+  /* ★ IME 픽스 */
+  -webkit-user-select:text!important;user-select:text!important;
+  inputmode:text;
+}
 .lbox input::placeholder{color:rgba(255,255,255,.4);}
 .lbox input:focus{border-color:#e74c3c;}
 .red-btn{background:#e74c3c;color:#fff;border:none;border-radius:12px;padding:14px;width:100%;font-weight:700;font-size:1rem;cursor:pointer;}
@@ -136,21 +144,6 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
       <h3>📢 공지사항</h3>
       <button onclick="closeNotice()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;padding:5px 10px;font-size:.8rem;cursor:pointer;">닫기</button>
     </div>
-    <div class="notice-body" id="notice-body">
-      ⏳ 불러오는 중...
-    </div>
-    <div class="notice-footer">
-      <button class="notice-close-btn" onclick="closeNotice()">확인</button>
-    </div>
-  </div>
-</div>
-
-<!-- 공지사항 팝업 -->
-<div id="notice-popup" class="notice-wrap" style="display:none;">
-  <div class="notice-box">
-    <div class="notice-header">
-      <h3>📢 공지사항</h3>
-    </div>
     <div class="notice-body" id="notice-body">⏳ 불러오는 중...</div>
     <div class="notice-footer">
       <button class="notice-close-btn" onclick="closeNotice()">확인</button>
@@ -182,10 +175,24 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
 <!-- 예약하기 -->
 <div id="s-booking" class="screen pg">
   <div class="pg-ttl">📅 출동 예약</div>
-  <div class="mb-3"><label class="form-label small text-muted">이름 *</label>
-    <input type="text" id="bk-name" class="form-control form-control-lg" placeholder="홍길동"></div>
-  <div class="mb-3"><label class="form-label small text-muted">연락처 *</label>
-    <input type="tel" id="bk-phone" class="form-control form-control-lg" placeholder="010-0000-0000"></div>
+  <div class="mb-3">
+    <label class="form-label small text-muted">이름 *</label>
+    <!-- ★ IME 픽스: inputmode="text" + autocomplete 계열 끄기 -->
+    <input type="text" id="bk-name" class="form-control form-control-lg"
+      placeholder="홍길동"
+      inputmode="text"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false">
+  </div>
+  <div class="mb-3">
+    <label class="form-label small text-muted">연락처 *</label>
+    <input type="tel" id="bk-phone" class="form-control form-control-lg"
+      placeholder="010-0000-0000"
+      inputmode="tel"
+      autocomplete="off">
+  </div>
   <div class="mb-3">
     <label class="form-label small text-muted">출동 지역 선택 *</label>
     <div id="bk-region-wrap" style="border:1px solid #dee2e6;border-radius:12px;overflow:hidden;">
@@ -197,9 +204,19 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
     </div>
     <input type="hidden" id="bk-region">
   </div>
-  <div class="mb-3"><label class="form-label small text-muted">세부 주소 *</label>
-    <input type="text" id="bk-address" class="form-control form-control-lg" placeholder="아파트명, 동/호수, 건물명 등"></div>
-  <div class="mb-3"><label class="form-label small text-muted">평수 선택</label>
+  <div class="mb-3">
+    <label class="form-label small text-muted">세부 주소 *</label>
+    <!-- ★ IME 픽스 -->
+    <input type="text" id="bk-address" class="form-control form-control-lg"
+      placeholder="아파트명, 동/호수, 건물명 등"
+      inputmode="text"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false">
+  </div>
+  <div class="mb-3">
+    <label class="form-label small text-muted">평수 선택</label>
     <select id="bk-size" class="form-select form-select-lg">
       <option value="원룸 (10평 이하)">원룸 (10평 이하)</option>
       <option value="투룸 (20평 이하)">투룸 (20평 이하)</option>
@@ -207,7 +224,8 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
       <option value="30평대 (40평 이하)">30평대 (40평 이하)</option>
       <option value="40평대 (50평 이하)">40평대 (50평 이하)</option>
       <option value="50평 이상">50평 이상 (별도 문의)</option>
-    </select></div>
+    </select>
+  </div>
   <div class="mb-3" style="background:#fff9db;padding:15px;border-radius:12px;border:1px solid #ffe066;">
     <div class="form-check mb-2">
       <input class="form-check-input" type="checkbox" id="bk-fac">
@@ -221,8 +239,17 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
       <div style="color:#999;font-size:.75rem;margin-top:2px;">* 간단한 테이핑 등 소규모 작업은 무료로 진행될 수 있습니다</div>
     </div>
   </div>
-  <div class="mb-3"><label class="form-label small text-muted">요청사항 (선택)</label>
-    <textarea id="bk-memo" class="form-control" rows="3" placeholder="추가 요청사항"></textarea></div>
+  <div class="mb-3">
+    <label class="form-label small text-muted">요청사항 (선택)</label>
+    <!-- ★ IME 픽스: textarea에 핵심 속성 추가 -->
+    <textarea id="bk-memo" class="form-control" rows="3"
+      placeholder="추가 요청사항"
+      inputmode="text"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"></textarea>
+  </div>
   <div class="ybox text-center">⚠️ <b>노쇼방지 선납금</b> · 오후 10시 이전: 2만원 / 오후 10시 이후: 3만원</div>
   <button class="btn btn-dark w-100" style="border-radius:12px;padding:14px;font-weight:700;margin-bottom:10px;" onclick="submitBooking()">예약 신청하기</button>
   <button class="btn btn-light w-100" style="border-radius:12px;padding:14px;font-weight:700;" onclick="goTo('main')">뒤로가기</button>
@@ -262,7 +289,11 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
 <div id="s-my-booking" class="screen pg">
   <div class="pg-ttl">📋 내 예약 현황</div>
   <div class="mb-2 d-flex gap-2">
-    <input type="tel" id="srch-phone" class="form-control form-control-lg" placeholder="예약 시 입력한 연락처">
+    <!-- ★ IME 픽스 -->
+    <input type="tel" id="srch-phone" class="form-control form-control-lg"
+      placeholder="예약 시 입력한 연락처"
+      inputmode="tel"
+      autocomplete="off">
     <button class="btn btn-dark px-4" style="border-radius:12px;white-space:nowrap;" onclick="loadMyBk()">조회</button>
   </div>
   <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:.8rem;color:#856404;">
@@ -303,8 +334,6 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
       </div>
     </div>
   </div>
-
-  
   <div style="background:#e3f2fd;border:1px solid #90caf9;border-radius:12px;padding:15px;margin-bottom:14px;">
     <h6 style="color:#1565c0;font-weight:700;font-size:.9rem;margin-bottom:8px;">📋 예약 후 진행 안내</h6>
     <p style="font-size:.83rem;color:#333;line-height:1.9;margin:0;">
@@ -322,7 +351,6 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
       • 콜이 잡히지 않을 경우 <b>다른 시간대에 다시 시도하시거나 타 업체를 알아보시기 바랍니다.</b>
     </p>
   </div>
-  
   <div style="background:#fff9db;border:1px solid #ffe066;border-radius:14px;padding:16px;margin-bottom:14px;">
     <div style="font-weight:700;font-size:.95rem;margin-bottom:10px;">🔧 시설보완 서비스란?</div>
     <div style="font-size:.83rem;color:#555;line-height:1.9;">
@@ -341,7 +369,7 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
     • 작업을 받는다고 한 마리도 안 보인다는 의미는 아니며, 유입 경로 차단, 전용 약제 작업 등으로 최대한 덜 보이고 내부 서식을 못 하게 막는 작업입니다.<br><br>
     • 개체가 너무 많거나 건물 문제가 심각한 경우 추가 작업이 필요할 수 있습니다.</p>
   </div>
-  <!-- 출동대기 명단 - 클릭시 토글 -->
+  <!-- 출동대기 명단 -->
   <div style="border:1px solid #eee;border-radius:14px;overflow:hidden;margin-bottom:16px;">
     <div onclick="toggleEl('pub-wk-list')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#f8f9fa;cursor:pointer;">
       <div style="font-weight:700;font-size:.95rem;">⚡ 실시간 출동대기 명단</div>
@@ -368,7 +396,7 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
       </div>
     </div>
   </div>
-    <!-- 플랫폼 대표 연락처 -->
+  <!-- 플랫폼 대표 연락처 -->
   <div style="border:1px solid #eee;border-radius:14px;overflow:hidden;margin-bottom:16px;">
     <div onclick="toggleEl('master-contact-wrap')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#f8f9fa;cursor:pointer;">
       <div style="font-weight:700;font-size:.95rem;">📞 플랫폼 대표 연락처</div>
@@ -389,18 +417,13 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
   <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:.83rem;color:#2e7d32;">
     🟢 현재 <b id="area-avail-cnt">-</b>명 대기중 · 즉시 출동 가능
   </div>
-  <!-- 좌우 분할 -->
   <div style="display:flex;gap:10px;align-items:flex-start;">
-    <!-- 왼쪽: 대분류 클릭 목록 -->
     <div style="width:42%;flex-shrink:0;">
       <div id="area-region-list" style="display:flex;flex-direction:column;gap:6px;"></div>
     </div>
-    <!-- 오른쪽: 지도형 뷰 -->
     <div style="flex:1;background:#f0f7f0;border-radius:14px;padding:12px;min-height:400px;position:relative;">
       <div id="area-map-view">
-        <div style="text-align:center;padding:40px 10px;color:#aaa;font-size:.82rem;">
-          ← 지역을 선택하세요
-        </div>
+        <div style="text-align:center;padding:40px 10px;color:#aaa;font-size:.82rem;">← 지역을 선택하세요</div>
       </div>
     </div>
   </div>
@@ -412,8 +435,16 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
   <h2>🔐 로그인</h2>
   <p>관리자 또는 작업자 계정으로 로그인하세요</p>
   <div class="lbox">
-    <input type="text" id="login-id" placeholder="아이디" autocomplete="username">
-    <input type="password" id="login-pw" placeholder="비밀번호" autocomplete="current-password">
+    <!-- ★ IME 픽스: 로그인 필드 -->
+    <input type="text" id="login-id" placeholder="아이디"
+      autocomplete="username"
+      inputmode="text"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false">
+    <input type="password" id="login-pw" placeholder="비밀번호"
+      autocomplete="current-password"
+      inputmode="text">
     <button class="red-btn" onclick="unlockAudio();doLogin()">로그인</button>
     <hr style="border-color:rgba(255,255,255,.1);margin:18px 0;">
     <p style="color:rgba(255,255,255,.5);font-size:.8rem;text-align:center;margin-bottom:10px;">작업자 가입 신청</p>
@@ -427,12 +458,19 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
   <h2>📝 가입 신청</h2>
   <p>관리자 승인 후 로그인 가능합니다</p>
   <div class="lbox">
-    <input type="text" id="reg-name" placeholder="이름 (실명)">
-    <input type="text" id="reg-id" placeholder="사용할 아이디">
-    <input type="password" id="reg-pw" placeholder="비밀번호">
-    <input type="tel" id="reg-phone" placeholder="연락처 (010-0000-0000)">
-    <input type="text" id="reg-company" placeholder="소속 업체명 (선택)">
-    <input type="text" id="reg-area" placeholder="담당 지역 (예: 강남구, 서초구)">
+    <!-- ★ IME 픽스: 가입 필드 전체 -->
+    <input type="text" id="reg-name" placeholder="이름 (실명)"
+      inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <input type="text" id="reg-id" placeholder="사용할 아이디"
+      inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <input type="password" id="reg-pw" placeholder="비밀번호"
+      inputmode="text" autocomplete="off">
+    <input type="tel" id="reg-phone" placeholder="연락처 (010-0000-0000)"
+      inputmode="tel" autocomplete="off">
+    <input type="text" id="reg-company" placeholder="소속 업체명 (선택)"
+      inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <input type="text" id="reg-area" placeholder="담당 지역 (예: 강남구, 서초구)"
+      inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     <button class="red-btn" onclick="submitRegister()">가입 신청하기</button>
   </div>
   <button class="btn btn-link text-secondary mt-3" onclick="goTo('admin-gate')">← 로그인으로</button>
@@ -447,7 +485,6 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
     <div class="atab master-tab" data-tab="t-mem" onclick="showTab('t-mem')" style="display:none;">👥 회원관리</div>
   </div>
 
-  <!-- 대시보드 (숨김 - 탭에서 제거됨) -->
   <div id="t-dash" class="apg" style="display:none!important;">
     <div class="sg">
       <div class="sc"><div class="sn" id="st-today">-</div><div class="sl">오늘 예약</div></div>
@@ -463,7 +500,6 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
 
   <!-- 실시간 콜 -->
   <div id="t-call" class="apg on" style="padding:0;overflow-y:auto;">
-    <!-- 작업자 상태바 -->
     <div id="worker-st-bar" class="st-bar">
       <div style="font-size:.75rem;opacity:.6;margin-bottom:6px;">내 현재 상태</div>
       <div id="my-st-label" style="font-size:1rem;font-weight:900;margin-bottom:12px;">⏳ 로딩중...</div>
@@ -475,7 +511,6 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
         <button class="ws-btn" data-st="퇴근" onclick="setMyStatus('퇴근')" style="background:#555;">⚫ 퇴근</button>
       </div>
     </div>
-    <!-- 마스터 헤더 -->
     <div id="master-call-bar" style="display:none;background:linear-gradient(135deg,#1a1a2e,#16213e);padding:14px 16px;color:#fff;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div style="font-size:.9rem;font-weight:900;">🚨 실시간 콜 모니터링</div>
@@ -489,17 +524,23 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
         </div>
         <div id="master-call-status-label" style="font-size:.72rem;opacity:.7;margin-top:6px;">오전 10시 ~ 오후 10시 통화 가능</div>
       </div>
-      <!-- 공지사항 관리 -->
       <div style="margin-top:12px;border-top:1px solid rgba(255,255,255,.15);padding-top:12px;">
         <div style="font-size:.72rem;opacity:.6;margin-bottom:6px;">📢 공지사항 관리</div>
-        <textarea id="notice-input" rows="3" style="width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:10px;padding:10px;font-size:.8rem;resize:none;outline:none;" placeholder="공지사항 내용 입력..."></textarea>
+        <!-- ★ IME 픽스: 공지사항 textarea -->
+        <textarea id="notice-input" rows="3"
+          style="width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:10px;padding:10px;font-size:.8rem;resize:none;outline:none;"
+          placeholder="공지사항 내용 입력..."
+          inputmode="text"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"></textarea>
         <div style="display:flex;gap:8px;margin-top:6px;">
           <button onclick="saveNotice()" style="flex:1;padding:8px;border:none;border-radius:10px;background:#27ae60;color:#fff;font-size:.78rem;font-weight:700;cursor:pointer;">💾 저장 (표시)</button>
           <button onclick="disableNotice()" style="flex:1;padding:8px;border:none;border-radius:10px;background:rgba(255,255,255,.15);color:#fff;font-size:.78rem;font-weight:700;cursor:pointer;">🚫 공지 끄기</button>
         </div>
       </div>
     </div>
-
     <div style="padding:10px 14px 4px;font-size:.78rem;color:#999;font-weight:700;">
       🚨 접수 대기 중인 콜 <span id="pend-cnt" style="color:#e74c3c;"></span>
     </div>
@@ -508,7 +549,6 @@ body.locked{overflow:hidden;position:fixed;width:100%;height:100vh;}
       📋 내가 수락한 콜 <span id="my-cnt" style="color:#27ae60;"></span>
     </div>
     <div id="my-call-list" style="padding:0 14px 20px;"></div>
-    <!-- 담당 지역 설정 (하단 토글) -->
     <div id="area-setting-wrap" style="padding:0 14px;display:none;">
       <div style="border:1px solid #eee;border-radius:14px;overflow:hidden;margin-bottom:12px;">
         <div onclick="toggleEl('area-selector-inner')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#f8f9fa;cursor:pointer;">
@@ -612,18 +652,6 @@ var REGIONS = {
 };
 
 // ── 마스터 초기화
-// 공지사항 초기값 세팅
-DB.ref('notice').once('value', function(snap) {
-  if (!snap.exists()) {
-    DB.ref('notice').set({
-      text: '임시운영 안내\n\n현재 서울·경기·인천 지역만 서비스 가능합니다.\n\n예약 정보 입력 후 아래 번호로 문의해 주세요.\n📞 010-2589-5746\n\n입력하지 않고 전화하셔도 됩니다.',
-      enabled: true,
-      updatedAt: Date.now()
-    });
-  }
-});
-
-// 공지사항 기본값
 DB.ref('notice').once('value', function(snap) {
   if (!snap.exists()) {
     DB.ref('notice').set({
@@ -652,7 +680,6 @@ function loadNotice() {
     if (el) el.textContent = d.text;
     var popup = document.getElementById('notice-popup');
     if (popup) popup.style.display = 'flex';
-    // 마스터 공지 입력란에도 현재 내용 표시
     var input = document.getElementById('notice-input');
     if (input) input.value = d.text;
   });
@@ -679,8 +706,6 @@ function disableNotice() {
   });
 }
 
-// ── 공지사항
-
 // ── 화면 히스토리 스택
 var PAGE_STACK = [];
 
@@ -692,7 +717,6 @@ function goTo(key) {
     'my-booking':'s-my-booking','about':'s-about','area':'s-area',
     'admin-gate':'s-admin-gate','register':'s-register','admin-panel':'s-admin'
   };
-  // 현재 화면 스택에 저장 (메인→메인 중복 제외)
   var curActive = document.querySelector('.screen.active, .pg.active, .dark-pg.active');
   if (curActive && curActive.id) {
     var curKey = Object.keys(map).find(function(k) { return map[k] === curActive.id; }) || curActive.id;
@@ -717,13 +741,13 @@ function goTo(key) {
     startListeners();
     setTimeout(function() { renderStCard(CU ? CU.workerStatus || '대기중' : '대기중'); }, 200);
   }
+
 }
 
 // ── 뒤로가기
 function goBack() {
   if (PAGE_STACK.length > 0) {
     var prev = PAGE_STACK.pop();
-    // goTo 호출 시 스택에 다시 쌓이지 않도록 직접 화면 전환
     var map = {
       'main':'s-main','booking':'s-booking','price':'s-price',
       'my-booking':'s-my-booking','about':'s-about','area':'s-area',
@@ -742,7 +766,6 @@ function goBack() {
     if (prev === 'about') loadMasterCallStatus();
     if (prev === 'area') loadAreaMap();
   } else {
-    // 스택 없으면 메인으로
     goTo('main');
   }
 }
@@ -781,7 +804,8 @@ function playSound() {
     if (navigator.vibrate) navigator.vibrate([400, 150, 400, 150, 400]);
   } catch(e) {}
 }
-// ── 커스텀 확인 팝업 (브라우저 confirm 대체 - http 문구 없음)
+
+// ── 커스텀 확인 팝업
 function customConfirm(msg, onOk, onCancel) {
   var ex = document.getElementById('custom-confirm');
   if (ex) ex.remove();
@@ -805,7 +829,6 @@ function toggleBkRegion() {
   var arrow = document.getElementById('bk-region-arrow');
   if (!list) return;
   if (list.style.display === 'none') {
-    // 렌더
     var html = '';
     Object.keys(REGIONS).forEach(function(region) {
       html += '<div style="margin-bottom:10px;">'
@@ -824,9 +847,6 @@ function toggleBkRegion() {
     if (arrow) arrow.textContent = '▼';
   }
 }
-function selectBkRegionBtn(btn) {
-  selectBkRegion(btn.getAttribute('data-area'));
-}
 function selRegBtn(b){selectBkRegion(b.getAttribute("data-area"));}
 function selectBkRegion(area) {
   document.getElementById('bk-region').value = area;
@@ -836,7 +856,6 @@ function selectBkRegion(area) {
   if (list) list.style.display = 'none';
   var arrow = document.getElementById('bk-region-arrow');
   if (arrow) arrow.textContent = '▼';
-  // 선택된 지역 버튼 강조
   var btns = list ? list.querySelectorAll('button') : [];
   btns.forEach(function(b) {
     b.style.background = b.textContent === area ? '#212529' : '#fff';
@@ -844,8 +863,6 @@ function selectBkRegion(area) {
     b.style.borderColor = b.textContent === area ? '#212529' : '#dee2e6';
   });
 }
-
-// 앱 포그라운드 복귀 시 콜 확인 후 알람 재시작
 
 function resumeAlarmCheck() {
   if (!CU || CU.role === 'master') return;
@@ -857,20 +874,17 @@ function resumeAlarmCheck() {
 function canAlarm(bkRegion) {
   if (!CU) return false;
   var st = CU.workerStatus || '대기중';
-  if (st !== '대기중') return false; // 대기중만 알람
-  if (CU.role === 'master') return true; // 마스터는 모든 알람
-  // 작업자: 담당 지역 확인
-  if (!bkRegion) return true; // 지역 정보 없으면 허용
+  if (st !== '대기중') return false;
+  if (CU.role === 'master') return true;
+  if (!bkRegion) return true;
   var myAreas = CU.coverAreas && CU.coverAreas.length ? CU.coverAreas :
     (CU.area ? CU.area.split(',').map(function(a){return a.trim();}).filter(Boolean) : []);
-  if (!myAreas.length) return true; // 지역 미설정이면 모든 콜 허용
-  // 예약 지역이 내 담당 지역에 포함되는지 확인
+  if (!myAreas.length) return true;
   return myAreas.some(function(a) {
     return bkRegion.indexOf(a) >= 0 || a.indexOf(bkRegion) >= 0;
   });
 }
 
-// ── 알람 배너
 function showBanner(title, body) {
   var ex = document.getElementById('alarm-banner');
   if (ex) ex.remove();
@@ -883,7 +897,6 @@ function showBanner(title, body) {
     + '<button onclick="dismissBanner()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:.8rem;cursor:pointer;margin-left:10px;flex-shrink:0;">확인</button>'
     + '</div>';
   document.body.appendChild(d);
-  // 배너 표시 시 즉시 소리 (startCallAlarm에서 이미 호출할 수 있으므로 중복 방지)
 }
 function dismissBanner() {
   var el = document.getElementById('alarm-banner');
@@ -910,13 +923,11 @@ function submitBooking() {
     createdAt:Date.now(), dateStr:new Date().toLocaleString('ko-KR')
   }, function(err) {
     if (err) return toast('오류: ' + err.message);
-    // alerts에도 region 포함
     DB.ref('alerts').push({
       type:'new_booking', name:name, phone:phone,
       address:addr, region:region, size:size, createdAt:Date.now()
     });
     toast('✅ 예약이 접수되었습니다!');
-    // 폼 초기화 (중복 제거)
     ['bk-name','bk-phone','bk-address','bk-memo'].forEach(function(id) {
       var el = document.getElementById(id); if (el) el.value = '';
     });
@@ -975,7 +986,7 @@ function loadMyBk() {
   });
 }
 
-// ── 공개 작업자 (서비스소개) - 전화번호 비공개, 클릭시 세부지역
+// ── 공개 작업자 (서비스소개)
 function loadPubWorkers() {
   var el = document.getElementById('pub-wk-list');
   DB.ref('users').on('value', function(snap) {
@@ -1031,19 +1042,11 @@ function toggleEl(id) {
   if (id === 'master-contact-wrap') {
     var arrow2 = document.getElementById('master-contact-arrow');
     if (arrow2) arrow2.textContent = isHidden ? '접기 ▲' : '펼치기 ▼';
-    if (isHidden) {
-      loadMasterCallStatus();
-      // 열릴 때 번호 숨기고 확인버튼 다시 표시
-      var cbtn = document.getElementById('contact-confirm-btn');
-      var cnum = document.getElementById('contact-number-wrap');
-      if (cbtn) cbtn.style.display = 'block';
-      if (cnum) cnum.style.display = 'none';
-    }
+    if (isHidden) loadMasterCallStatus();
   }
   if (id === 'biz-wrap') {
     var arrow3 = document.getElementById('biz-arrow');
     if (arrow3) arrow3.textContent = isHidden ? '접기 ▲' : '펼치기 ▼';
-    // 닫히면 이미지도 닫기
     if (!isHidden) {
       var imgWrap = document.getElementById('biz-img-wrap');
       if (imgWrap) imgWrap.style.display = 'none';
@@ -1065,7 +1068,6 @@ function getAreaSummary(w) {
 }
 
 // ── 서비스 가능 지역 지도
-// 현재 선택된 지역
 var AREA_COVERED = {};
 var AREA_SELECTED_REGION = null;
 
@@ -1110,7 +1112,7 @@ function renderAreaRegionList() {
 function selectAreaRegion(btn) {
   var region = btn.getAttribute('data-region');
   AREA_SELECTED_REGION = region;
-  renderAreaRegionList(); // 선택 강조 업데이트
+  renderAreaRegionList();
   renderAreaMapView(region);
 }
 
@@ -1159,7 +1161,6 @@ function doLogin() {
     if (found.status === 'pending') return toast('승인 대기 중입니다.');
     if (found.status === 'rejected') return toast('사용이 제한된 계정입니다.');
     CU = found;
-    // 자동 로그인을 위해 localStorage에 저장
     try { localStorage.setItem('saved_id', found.id); localStorage.setItem('saved_pw', found.password); } catch(e){}
     document.querySelectorAll('.master-tab').forEach(function(el) {
       el.style.display = found.role === 'master' ? 'block' : 'none';
@@ -1220,7 +1221,6 @@ function showTab(id) {
   document.querySelectorAll('.atab').forEach(function(el) { el.classList.remove('on'); });
   var c = document.getElementById(id); if (c) c.classList.add('on');
   var t = document.querySelector('[data-tab="' + id + '"]'); if (t) t.classList.add('on');
-  // 탭 전환 시 해당 탭 렌더 강제 호출
   if (id === 't-bk') renderBkList();
   if (id === 't-wk' && WK_CACHE) renderWorkers(WK_CACHE);
   if (id === 't-call') { renderCallList(); renderMyRec(); }
@@ -1266,19 +1266,10 @@ function updateCallStatusUI(status) {
     }
   }
 }
-
-function showMasterContact() {
-  var btn = document.getElementById('contact-confirm-btn');
-  var num = document.getElementById('contact-number-wrap');
-  if (btn) btn.style.display = 'none';
-  if (num) num.style.display = 'block';
-}
 function loadMasterCallStatus() {
   DB.ref('users/master/callStatus').once('value', function(snap) {
-    var status = snap.val() || 'available';
-    updateCallStatusUI(status);
+    updateCallStatusUI(snap.val() || 'available');
   });
-  // 실시간 구독 - 고객화면도 업데이트
   DB.ref('users/master/callStatus').on('value', function(snap) {
     updateCallStatusUI(snap.val() || 'available');
   });
@@ -1301,17 +1292,11 @@ function startListeners() {
         showBanner('📋 새 예약 접수!', ALL_BK[0].name + ' · ' + ALL_BK[0].size + ' · ' + ALL_BK[0].address);
       }
       LAST_CNT = ALL_BK.length;
-      // 새 콜 알람 (기존에 없던 콜)
       Object.keys(np).forEach(function(k) {
         if (!PEND[k] && canAlarm(np[k].region||np[k].address||'')) startCallAlarm(np[k]);
       });
-      // 사라진 콜 알람 중지
       Object.keys(PEND).forEach(function(k) { if (!np[k]) stopCallAlarm(); });
       PEND = np;
-      // 첫 로드 시 이미 대기중인 콜 있으면 즉시 알람
-      if (LAST_CNT < 0 && Object.keys(PEND).length > 0 && canAlarm(Object.values(PEND)[0].region||Object.values(PEND)[0].address||'')) {
-        setTimeout(function() { startCallAlarm(Object.values(PEND)[0]); }, 500);
-      }
       renderBkList(); renderDash(); renderMyRec(); renderCallList();
       updateBadge(Object.keys(PEND).length);
     };
@@ -1365,7 +1350,6 @@ function startCallAlarm(bk) {
   if (!canAlarm(bk.region||bk.address||'')) return;
   ALARM_MUTED = false;
   stopCallAlarm();
-  // 안드로이드 백그라운드 알람 서비스 시작
   if (window.AndroidBridge) AndroidBridge.startAlarm();
   if (!ALARM_MUTED) playSound();
   showBanner('🚨 새 콜 접수!', bk.name + ' · ' + bk.size + ' · ' + bk.address);
@@ -1378,7 +1362,6 @@ function startCallAlarm(bk) {
 function stopCallAlarm() {
   if (CALL_TMR) { clearInterval(CALL_TMR); CALL_TMR = null; }
   dismissBanner();
-  // 안드로이드 알람 서비스 중지
   if (window.AndroidBridge) AndroidBridge.stopAlarm();
 }
 function muteAlarm() {
@@ -1405,7 +1388,6 @@ function renderCallList() {
   }
   var html = '';
   pend.forEach(function(b) {
-    // 마스터는 연락처 표시, 작업자는 수락 전 연락처 숨김
     var isMaster = CU && CU.role === 'master';
     html += '<div class="call-card">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
@@ -1438,19 +1420,18 @@ function acceptCallBtn(btn) {
   var bphone = btn.getAttribute('data-phone');
   if (!CU) return;
   customConfirm(bname + ' 고객의 콜을 수락하시겠습니까?', function() {
-  DB.ref('bookings/' + bid).update({
-    status:'연락중', workerName:CU.name || '', workerPhone:CU.phone || '',
-    acceptedAt:Date.now(), acceptedBy:CU.id || CU.key || ''
-  }, function(err) {
-    if (err) return toast('오류: ' + err.message);
-    // 작업자 상태 연락중으로 변경 (알람 자동 OFF)
-    DB.ref('users/' + CU.key).update({workerStatus:'연락중'});
-    CU.workerStatus = '연락중';
-    renderStCard('연락중');
-    stopCallAlarm();
-    toast('✅ ' + bname + ' 수락완료! 연락처: ' + bphone);
+    DB.ref('bookings/' + bid).update({
+      status:'연락중', workerName:CU.name || '', workerPhone:CU.phone || '',
+      acceptedAt:Date.now(), acceptedBy:CU.id || CU.key || ''
+    }, function(err) {
+      if (err) return toast('오류: ' + err.message);
+      DB.ref('users/' + CU.key).update({workerStatus:'연락중'});
+      CU.workerStatus = '연락중';
+      renderStCard('연락중');
+      stopCallAlarm();
+      toast('✅ ' + bname + ' 수락완료! 연락처: ' + bphone);
+    });
   });
-  }); // customConfirm
 }
 
 // ── 내 수락 기록
@@ -1512,7 +1493,6 @@ function recStBtn(btn) {
           ALARM_MUTED = false;
           renderStCard('대기중');
           showAreaSelector();
-          // 완료 후 대기중 전환 시 기존 콜 있으면 알람 재시작
           setTimeout(function() {
             var pl = Object.values(PEND);
             if (pl.length > 0) startCallAlarm(pl[0]);
@@ -1535,7 +1515,6 @@ function recStBtn(btn) {
           ALARM_MUTED = false;
           renderStCard('대기중');
           showAreaSelector();
-          // 취소 후 다른 콜 있으면 알람
           setTimeout(function() {
             var pl = Object.values(PEND);
             if (pl.length > 0) startCallAlarm(pl[0]);
@@ -1546,7 +1525,6 @@ function recStBtn(btn) {
     });
     return;
   }
-  // 이동중/작업중/연락중 - 바로 처리
   var wkSt = st === '이동중' ? '이동중' : st === '작업중' ? '작업중' : st === '연락중' ? '연락중' : null;
   DB.ref('bookings/' + bid).update({status:st}, function(err) {
     if (err) return;
@@ -1559,8 +1537,7 @@ function recStBtn(btn) {
   });
 }
 
-
-// ── 내 상태 설정 (작업자 전용)
+// ── 내 상태 설정
 function setMyStatus(st) {
   if (!CU || CU.role === 'master') return;
   DB.ref('users/' + CU.key).update({workerStatus:st}, function(err) {
@@ -1599,7 +1576,6 @@ function renderStCard(st) {
 }
 
 // ── 지역 선택기 (작업자)
-
 function toggleAreaSel() {
   var inner = document.getElementById('area-selector-inner');
   var arrow = document.getElementById('area-sel-arrow');
@@ -1613,12 +1589,11 @@ function showAreaSelector() {
   var wrap = document.getElementById('area-setting-wrap');
   if (wrap) wrap.style.display = 'block';
   var inner = document.getElementById('area-selector-inner');
-  if (inner) { inner.style.display = 'block'; }
+  if (inner) inner.style.display = 'block';
   var arrow = document.getElementById('area-sel-arrow');
   if (arrow) arrow.textContent = '접기 ▲';
   renderAreaSelector();
 }
-
 function renderAreaSelector() {
   var sel = document.getElementById('area-selector'); if (!sel) return;
   var saved = {};
@@ -1641,23 +1616,18 @@ function renderAreaSelector() {
   });
   sel.innerHTML = html;
 }
-
-// 지역 전체선택/해제 토글
 function toggleRegionAll(btn) {
   var region = btn.getAttribute('data-region');
   var areas = REGIONS[region];
   if (!areas) return;
-  // 현재 모두 체크됐는지 확인
   var allChecked = areas.every(function(a) {
     var cb = document.querySelector('input[name="area-cb"][value="' + a + '"]');
     return cb && cb.checked;
   });
-  // 반전
   areas.forEach(function(a) {
     var cb = document.querySelector('input[name="area-cb"][value="' + a + '"]');
     if (cb) cb.checked = !allChecked;
   });
-  // 버튼 스타일 업데이트
   if (!allChecked) {
     btn.style.background = '#27ae60'; btn.style.color = '#fff';
     btn.style.borderColor = '#27ae60'; btn.textContent = '✅ 전체선택됨';
@@ -1754,7 +1724,6 @@ function renderBkList() {
       + (b.memo ? '<p style="margin:0;">📝 ' + b.memo + '</p>' : '')
       + (b.workerName ? '<p style="margin:0;">👷 담당: <b>' + b.workerName + '</b></p>' : '')
       + '</div>';
-    // 상태 버튼
     if (isMaster) {
       html += '<div class="mt-2">';
       ['접수중','배정완료','출동중','완료','취소'].forEach(function(s) {
@@ -1772,8 +1741,8 @@ function renderBkList() {
     }
     if (!isDone && (b.status === '배정완료' || b.status === '출동중')) {
       html += '<div class="mt-2 d-flex gap-2">'
-        + '<input type="text" id="wa-' + b.id + '" class="form-control form-control-sm" placeholder="작업자 이름" value="' + (b.workerName || '') + '" style="border-radius:8px;">'
-        + '<input type="tel" id="wp-' + b.id + '" class="form-control form-control-sm" placeholder="전화번호" value="' + (b.workerPhone || '') + '" style="border-radius:8px;">'
+        + '<input type="text" id="wa-' + b.id + '" class="form-control form-control-sm" placeholder="작업자 이름" value="' + (b.workerName || '') + '" style="border-radius:8px;" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">'
+        + '<input type="tel" id="wp-' + b.id + '" class="form-control form-control-sm" placeholder="전화번호" value="' + (b.workerPhone || '') + '" style="border-radius:8px;" inputmode="tel" autocomplete="off">'
         + '<button class="btn btn-sm btn-dark" style="border-radius:8px;white-space:nowrap;" data-bid="' + b.id + '" onclick="assignBtn(this)">배정</button>'
         + '</div>';
     }
@@ -1792,7 +1761,7 @@ function filterBk(st) { BK_FILTER = st; BK_PAGE = 0; renderBkList(); }
 function stBtnClick(btn) {
   var bid = btn.getAttribute('data-bid');
   var st = btn.getAttribute('data-st');
-  if (st === '완료' && !confirm('완료 처리하시겠습니까?\n완료 후에는 마스터만 변경 가능합니다.')) return;
+  if (st === '완료' && !confirm('완료 처리하시겠습니까?')) return;
   DB.ref('bookings/' + bid).update({status:st}, function(err) { if (!err) toast('상태: ' + st); });
 }
 function assignBtn(btn) {
@@ -1845,7 +1814,6 @@ function openWkModal(el) {
   document.getElementById('wk-modal-name').textContent = w.name + ' 작업자 정보';
   var lm = {'대기중':'🟢 대기중','이동중':'🚗 이동중','작업중':'🔴 작업중','퇴근':'⚫ 퇴근'};
   var areas = w.coverAreas || (w.area ? w.area.split(',').map(function(a) { return a.trim(); }).filter(Boolean) : []);
-  // 세부 지역 태그
   var areaTagHtml = '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;">';
   if (areas.length) {
     areas.forEach(function(a) { areaTagHtml += '<span style="background:#e8f5e9;color:#2e7d32;padding:4px 10px;border-radius:20px;font-size:.75rem;">' + a + '</span>'; });
@@ -1857,12 +1825,11 @@ function openWkModal(el) {
     + '<div>📊 상태: <b>' + (lm[w.workerStatus || '대기중'] || w.workerStatus) + '</b></div>'
     + '<div>📍 담당 지역: ' + getAreaSummary(w) + '</div>'
     + '</div>' + areaTagHtml;
-  // 마스터만 편집 가능
   if (isMaster) {
     html += '<hr style="margin:14px 0;">'
       + '<div style="font-size:.82rem;font-weight:700;margin-bottom:10px;">✏️ 마스터 편집</div>'
       + '<div style="margin-bottom:12px;"><label style="font-size:.78rem;color:#666;display:block;margin-bottom:4px;">소속 업체명</label>'
-      + '<input type="text" id="wk-co-' + key + '" value="' + (w.company || '') + '" placeholder="업체명 입력" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:10px;font-size:.85rem;"></div>'
+      + '<input type="text" id="wk-co-' + key + '" value="' + (w.company || '') + '" placeholder="업체명 입력" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:10px;font-size:.85rem;" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>'
       + '<div style="margin-bottom:12px;"><label style="font-size:.78rem;color:#666;display:block;margin-bottom:6px;">담당 지역 변경</label>'
       + '<div id="wk-area-' + key + '" style="max-height:200px;overflow-y:auto;border:1px solid #eee;border-radius:10px;padding:10px;"></div></div>'
       + '<button data-wkkey="' + key + '" onclick="saveMasterEdit(this)" style="width:100%;padding:12px;border:none;border-radius:12px;background:#e74c3c;color:#fff;font-weight:700;font-size:.9rem;cursor:pointer;">✅ 저장</button>';
@@ -1892,7 +1859,6 @@ function renderWkAreaSel(key, saved) {
   });
   el.innerHTML = html;
 }
-
 function toggleMasterRegionAll(btn) {
   var key = btn.getAttribute('data-mkey');
   var region = btn.getAttribute('data-region');
@@ -1949,7 +1915,7 @@ function renderMembers(snap) {
   });
   pe.innerHTML = pend.length ? pend.map(function(m) {
     return '<div class="memc"><div><strong>' + m.name + '</strong> <span class="text-muted small">(' + m.id + ')</span></div>'
-      + (CU && CU.role === 'master' ? '<div class="text-muted small">' + m.phone + ' · ' + (m.area || '') + '</div>' : '<div class="text-muted small">' + (m.area || '') + '</div>')
+      + '<div class="text-muted small">' + m.phone + ' · ' + (m.area || '') + '</div>'
       + '<div class="mact"><button class="mb2 mb2-g" data-key="' + m.key + '" onclick="apprBtn(this)">✅ 승인</button>'
       + '<button class="mb2 mb2-r" data-key="' + m.key + '" onclick="rejBtn(this)">❌ 거절</button></div></div>';
   }).join('') : '<p class="text-muted small">대기 없음</p>';
@@ -1957,7 +1923,7 @@ function renderMembers(snap) {
     return '<div class="memc"><div><strong>' + m.name + '</strong>'
       + ' <span class="badge ' + (m.role === 'admin' ? 'bg-primary' : 'bg-secondary') + '" style="font-size:.62rem;">' + (m.role === 'admin' ? '관리자' : '작업자') + '</span>'
       + ' <span class="text-muted small">(' + m.id + ')</span></div>'
-      + (CU && CU.role === 'master' ? '<div class="text-muted small">' + m.phone + ' · ' + (m.area || '') + '</div>' : '<div class="text-muted small">' + (m.area || '') + '</div>')
+      + '<div class="text-muted small">' + m.phone + ' · ' + (m.area || '') + '</div>'
       + '<div class="mact">'
       + (m.role === 'worker' ? '<button class="mb2 mb2-b" data-key="' + m.key + '" onclick="proBtn(this)">⬆️ 관리자</button>' : '<button class="mb2 mb2-x" data-key="' + m.key + '" onclick="demBtn(this)">⬇️ 작업자</button>')
       + '<button class="mb2 mb2-r" data-key="' + m.key + '" onclick="revBtn(this)">🚫 정지</button>'
@@ -1966,7 +1932,7 @@ function renderMembers(snap) {
 }
 function apprBtn(b) { DB.ref('users/' + b.getAttribute('data-key')).update({status:'approved'}, function() { toast('✅ 승인'); }); }
 function rejBtn(b) { DB.ref('users/' + b.getAttribute('data-key')).update({status:'rejected'}, function() { toast('거절 처리'); }); }
-function revBtn(b) { if (!confirm('계정을 정지하겠습니까?')) return; DB.ref('users/' + b.getAttribute('data-key')).update({status:'rejected'}, function() { toast('정지 완료'); }); }
+function revBtn(b) { customConfirm('계정을 정지하겠습니까?', function() { DB.ref('users/' + b.getAttribute('data-key')).update({status:'rejected'}, function() { toast('정지 완료'); }); }); }
 function proBtn(b) { DB.ref('users/' + b.getAttribute('data-key')).update({role:'admin'}, function() { toast('관리자 승격'); }); }
 function demBtn(b) { DB.ref('users/' + b.getAttribute('data-key')).update({role:'worker'}, function() { toast('작업자로 변경'); }); }
 
@@ -2006,7 +1972,6 @@ function tryAutoLogin() {
 }
 
 tryAutoLogin();
-loadNotice();
 loadNotice();
 </script>
 </body>
