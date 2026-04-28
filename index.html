@@ -733,13 +733,41 @@ function goTo(key) {
   if (!el) return;
   el.classList.add('active');
   window.scrollTo(0, 0);
-  if (key === 'main') { document.body.classList.add('locked'); PAGE_STACK = []; }
-  else document.body.classList.remove('locked');
+  if (key === 'main') {
+    document.body.classList.add('locked');
+    PAGE_STACK = [];
+  } else {
+    // ── position:fixed(locked) 해제 후 WebView 터치레이어 재계산 대기
+    // 일부 기기에서 locked 해제 직후 첫 터치가 이전 레이어에 흡수되는 현상 방지
+    document.body.classList.remove('locked');
+    // scrollTop 강제 초기화로 WebView 레이아웃 재계산 유도
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }
   if (key === 'about') loadMasterCallStatus();
   if (key === 'area') loadAreaMap();
   if (key === 'admin-panel') {
     startListeners();
     setTimeout(function() { renderStCard(CU ? CU.workerStatus || '대기중' : '대기중'); }, 200);
+  }
+
+  // ── IME 워밍업
+  // position:fixed 해제 후 WebView가 터치레이어를 재계산하는 시간(약 100ms) 이후에
+  // readonly 트릭으로 IME를 등록 → 키보드 없이 첫 탭부터 한글 입력 가능
+  var inputScreens = ['booking','my-booking','admin-gate','register'];
+  if (inputScreens.indexOf(key) >= 0) {
+    setTimeout(function() {
+      var screen = document.getElementById(id);
+      if (!screen) return;
+      var first = screen.querySelector('input[type="text"],input[type="tel"],textarea');
+      if (!first) return;
+      first.setAttribute('readonly', 'readonly');
+      first.focus();
+      setTimeout(function() {
+        first.removeAttribute('readonly');
+        first.blur();
+      }, 50);
+    }, 120);
   }
 
 }
